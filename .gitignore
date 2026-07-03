@@ -1,0 +1,7 @@
+node_modules/
+.env
+playwright-report/
+test-results/
+blob-report/
+tests/visual/visual.spec.ts-snapshots/
+*.log
