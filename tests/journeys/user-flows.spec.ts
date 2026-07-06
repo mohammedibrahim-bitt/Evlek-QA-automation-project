@@ -1,7 +1,7 @@
 import { test } from '../fixtures/test';
 import { ListingsPage } from '../../pages/ListingsPage';
 
-test.describe('Evlek normal user experience journeys', () => {
+test.describe('Evlek public user flows', () => {
   test('@regression user can filter listings by property type without losing results page', async ({ page }) => {
     const listings = new ListingsPage(page);
 
