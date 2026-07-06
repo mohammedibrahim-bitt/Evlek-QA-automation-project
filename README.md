@@ -68,7 +68,7 @@ All commands should be run from the project folder after `npm install`, `npx pla
 | `npm run test:buyer` | Buyer-style interactions such as mobile filters, currency switching, and gallery navigation. | No |
 | `npm run test:gated` | Cookie consent, save-search modal, and logged-out gated actions such as following a listing. | No |
 | `npm run test:user-flows` | Normal public user flows: property-type filtering, sorting, unrealistic search empty state, and save-search email validation. | No |
-| `npm run test:agent-flows` | Property lister/agent-style flows: logged-out add-listing gate, login entry, and saved-session add-listing access without publishing. | Only for signed-in add-listing check |
+| `npm run test:agent-flows` | Property lister/agent-style flows: logged-out add-listing gate, login entry, saved-session add-listing access, form structure, and empty-form validation without publishing. | Only for signed-in add-listing checks |
 | `npm run test:a11y` | Keyboard focus and accessible-name smoke checks for important UI areas. | No |
 | `npm run test:language` | Language switching and localized page smoke checks for Turkish, English, Russian, German, and Arabic. | No |
 
@@ -129,7 +129,7 @@ npm run test:visual -- --update-snapshots
 | `npm run test:buyer` | `@mobile`, `@regression` | Mobile filters, currency switching, gallery navigation | All configured projects unless filtered | No | Medium |
 | `npm run test:gated` | `@smoke`, `@regression` | Cookie consent, save-search modal, logged-out follow gate | All configured projects | No | Medium |
 | `npm run test:user-flows` | `@regression` | Property-type filtering, sorting, empty search, save-search email validation | All configured projects | No | Medium |
-| `npm run test:agent-flows` | `@regression`, `@requires-account` | Logged-out add-listing gate, lister login entry, and saved-session add-listing access without publishing | All configured projects | Only for signed-in add-listing check | Short |
+| `npm run test:agent-flows` | `@regression`, `@requires-account` | Logged-out add-listing gate, lister login entry, saved-session add-listing access, form structure, and empty-form validation without publishing | All configured projects | Only for signed-in add-listing checks | Short |
 | `npm run test:a11y` | `@regression` | Keyboard focus and accessible-name smoke checks | All configured projects | No | Medium |
 | `npm run test:language` | `@regression` | TR, EN, RU, DE, AR language switch smoke checks | All configured projects | No | Medium |
 | `npm run test:audit` | `@audit` | Browser-level page audit, console errors, blank pages | All configured projects | No | Long |

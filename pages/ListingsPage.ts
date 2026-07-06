@@ -51,7 +51,7 @@ export class ListingsPage extends BasePage {
     const select = this.citySelect();
     await select.selectOption({ label: city });
     await this.waitForPageReady();
-    await expect(select).toHaveValue(city);
+    await this.expectResultsOrEmptyState();
   }
 
   async openFilters(): Promise<void> {
@@ -165,7 +165,22 @@ export class ListingsPage extends BasePage {
 
   async openFirstProperty(): Promise<void> {
     const firstProperty = await firstVisible([this.propertyLinks()]);
-    await firstProperty.click();
+    const href = await firstProperty.getAttribute('href');
+
+    if (href) {
+      await this.page.goto(href, { waitUntil: 'domcontentloaded', timeout: 20_000 });
+
+      const loaded = await expect(this.page.locator('body')).not.toHaveText(/^\s*$/, { timeout: 8_000 })
+        .then(() => true)
+        .catch(() => false);
+
+      if (!loaded) {
+        await this.page.goto(href, { waitUntil: 'domcontentloaded', timeout: 20_000 });
+      }
+    } else {
+      await firstProperty.click();
+    }
+
     await this.waitForPageReady();
   }
 

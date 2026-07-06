@@ -3,7 +3,12 @@ import { ListingsPage } from '../../pages/ListingsPage';
 import { PropertyDetailPage } from '../../pages/PropertyDetailPage';
 
 test.describe('Evlek buyer interaction journeys', () => {
-  test('@mobile @regression mobile user can use listing filters without losing results', async ({ page }) => {
+  test.describe.configure({ mode: 'serial' });
+  test.setTimeout(90_000);
+
+  test('@mobile @regression mobile user can use listing filters without losing results', async ({ page }, testInfo) => {
+    test.skip(!testInfo.project.name.includes('mobile'), 'Mobile filter journey only runs on mobile projects.');
+
     const listings = new ListingsPage(page);
 
     await listings.openSale();

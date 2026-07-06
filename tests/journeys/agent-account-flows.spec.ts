@@ -19,4 +19,26 @@ test.describe('Evlek signed-in agent and property lister flows', () => {
     await addListing.expectSignedInListerCanAccessForm();
     await addListing.expectNoPublishOrDraftActionTaken();
   });
+
+  test('@regression @requires-account add-listing page exposes expected form structure', async ({ page }) => {
+    test.skip(!hasTestAccount(), 'Set TEST_USER_EMAIL and TEST_USER_PASSWORD with a provided test account.');
+    test.skip(!hasSavedAuthState, 'Run npm run auth:setup before saved-session account flows.');
+
+    const addListing = new AddListingPage(page);
+
+    await addListing.open();
+    await addListing.expectFormStructureVisible();
+    await addListing.expectNoPublishOrDraftActionTaken();
+  });
+
+  test('@regression @requires-account add-listing empty continue shows validation without publishing', async ({ page }) => {
+    test.skip(!hasTestAccount(), 'Set TEST_USER_EMAIL and TEST_USER_PASSWORD with a provided test account.');
+    test.skip(!hasSavedAuthState, 'Run npm run auth:setup before saved-session account flows.');
+
+    const addListing = new AddListingPage(page);
+
+    await addListing.open();
+    await addListing.expectDangerousActionsAreNotClickable();
+    await addListing.attemptEmptyContinueWithoutPublishing();
+  });
 });

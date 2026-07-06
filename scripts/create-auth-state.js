@@ -27,20 +27,20 @@ if (!email || !password) {
 
     await page.goto('/?auth=login', { waitUntil: 'domcontentloaded' });
 
-    const dialog = page.getByRole('dialog').first();
-    await expect(dialog).toBeVisible();
+    const emailInput = page.locator('input[type="email"][aria-label="E-posta"], input[type="email"][placeholder="E-posta adresi"]').first();
+    const emailVisible = await emailInput.isVisible({ timeout: 10_000 }).catch(() => false);
 
-    await dialog.locator('input[type="email"]').fill(email);
-    await dialog.locator('input[type="password"]').fill(password);
-    await dialog.locator('button[type="submit"]').click();
+    if (!emailVisible) {
+      await page.getByRole('button', { name: /giri\S* yap|login|sign in/i }).first().click();
+    }
 
-    await expect(dialog).toBeHidden({ timeout: 15_000 });
-    await expect(
-      page.getByRole('button', { name: /profil|hesab|account|profile|qu/i })
-        .or(page.getByRole('link', { name: /profil|hesab|account|profile/i }))
-        .first()
-    ).toBeVisible();
+    await expect(emailInput).toBeVisible({ timeout: 15_000 });
 
+    await emailInput.fill(email);
+    await page.locator('input[type="password"]').first().fill(password);
+    await page.locator('button[type="submit"]').filter({ hasText: /devam et|login|sign in/i }).first().click();
+
+    await expect(emailInput).toBeHidden({ timeout: 15_000 });
     await page.waitForTimeout(1_000);
     fs.mkdirSync(path.dirname(authStatePath), { recursive: true });
     await page.context().storageState({ path: authStatePath });

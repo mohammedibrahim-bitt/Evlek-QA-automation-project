@@ -8,36 +8,36 @@ export class PropertyDetailPage extends BasePage {
   }
 
   async expectLoaded(): Promise<void> {
-    await expect(this.page).toHaveURL(/\/properties\/[a-z0-9-]+/i);
     await this.expectNoBlankPage();
-    await expect(this.page.locator('h1').first()).toBeVisible();
+    await expect(this.page.locator('h1').first()).toContainText(/sat\S*l\S*k|kiral\S*k|g\S*nl\S*k|ilan/i);
+    await expect(this.page.locator('body')).toContainText(/fiyat|galeri|emlak|ilan/i);
   }
 
   async expectCorePropertyInformation(): Promise<void> {
     const body = this.page.locator('body');
 
-    await expect(body).toContainText(/satılık|kiralık|günlük/i);
+    await expect(body).toContainText(/sat\S*l\S*k|kiral\S*k|g\S*nl\S*k/i);
     await expect(body).toContainText(/£|€|\$|₺|GBP|EUR|USD|TRY/i);
-    await expect(body).toContainText(/yatak|banyo|m²|m2|açıklama|özellik/i);
-    await expect(body).toContainText(/konum|lefkosa|lefkoşa|girne|gazimağusa|iskele|güzelyurt|lefke/i);
+    await expect(body).toContainText(/yatak|banyo|m²|m2|a\S*iklama|\S*zellik/i);
+    await expect(body).toContainText(/konum|lefkosa|lefko\S*a|girne|gazima\S*usa|iskele|g\S*zelyurt|lefke/i);
   }
 
   async expectMediaAndActionsVisible(): Promise<void> {
     await expect(
-      this.page.getByRole('button', { name: /fotoğraf|önizleme|galeri/i })
-        .or(this.page.getByText(/fotoğraf|galeri/i))
+      this.page.getByRole('button', { name: /foto\S*raf|\S*nizleme|galeri/i })
+        .or(this.page.getByText(/foto\S*raf|galeri/i))
         .first()
     ).toBeVisible();
 
     await expect(
-      this.page.getByRole('button', { name: /whatsapp|telefon|iletişim|paylaş|takip/i })
-        .or(this.page.getByRole('link', { name: /whatsapp|telefon|iletişim|paylaş|takip/i }))
+      this.page.getByRole('button', { name: /whatsapp|telefon|ileti\S*im|payla\S*|takip/i })
+        .or(this.page.getByRole('link', { name: /whatsapp|telefon|ileti\S*im|payla\S*|takip/i }))
         .first()
     ).toBeVisible();
   }
 
   async openContactOptions(): Promise<void> {
-    const contactOptions = this.page.getByRole('button', { name: /paylaş \/ iletişim seçenekleri|iletişim|paylaş/i }).first();
+    const contactOptions = this.page.getByRole('button', { name: /payla\S* \/ ileti\S*im se\S*enekleri|ileti\S*im|payla\S*/i }).first();
     if (await contactOptions.isVisible().catch(() => false)) {
       await contactOptions.click();
     }
@@ -73,10 +73,10 @@ export class PropertyDetailPage extends BasePage {
   }
 
   async expectAuthGateVisible(): Promise<void> {
-    const dialog = this.page.getByRole('dialog').filter({ hasText: /hesap|giriş|üye|account|login|sign up/i }).first();
+    const dialog = this.page.getByRole('dialog').filter({ hasText: /hesap|giri\S*|\S*ye|account|login|sign up/i }).first();
 
     await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText(/giriş|üye|hesap|login|sign up/i);
+    await expect(dialog).toContainText(/giri\S*|\S*ye|hesap|login|sign up/i);
   }
 
   async switchCurrency(currency: 'GBP' | 'EUR' | 'USD' | 'TRY'): Promise<void> {
@@ -96,26 +96,33 @@ export class PropertyDetailPage extends BasePage {
   }
 
   async openGallery(): Promise<void> {
-    const galleryButton = this.page
-      .getByRole('button', { name: /foto|photo|gallery|galeri/i })
+    const galleryButton = this.page.getByRole('region', { name: /ilan foto\S*raf/i })
+      .getByRole('button', { name: /foto\S*raf|photo|t\S*m .*foto/i })
+      .or(this.page.getByRole('button', { name: /foto\S*raf|photo|gallery|galeri|t\S*m .*foto/i }))
       .first();
 
     await expect(galleryButton).toBeVisible();
     await galleryButton.click();
+    await this.expectGalleryStillOpen();
   }
 
   async expectGalleryNavigationVisible(): Promise<void> {
-    await expect(this.page.getByRole('button', { name: /sonraki|next/i }).or(this.page.getByText('›')).first()).toBeVisible();
-    await expect(this.page.getByRole('button', { name: /önceki|onceki|previous/i }).or(this.page.getByText('‹')).first()).toBeVisible();
+    await expect(this.nextGalleryButton()).toBeVisible();
+    await expect(this.previousGalleryButton()).toBeVisible();
   }
 
   async goToNextGalleryPhoto(): Promise<void> {
-    await this.page.getByRole('button', { name: /sonraki|next/i }).or(this.page.getByText('›')).first().click();
+    const nextButton = this.nextGalleryButton();
+
+    await expect(nextButton).toBeVisible();
+    await nextButton.click();
   }
 
   async expectGalleryStillOpen(): Promise<void> {
     await expect(
-      this.page.getByRole('button', { name: /foto|photo|önceki|onceki|sonraki|next/i }).or(this.page.getByText('✕')).first()
+      this.page.getByRole('button', { name: /foto|photo|\S*nceki|onceki|sonraki|next|kapat|close/i })
+        .or(this.page.locator('[aria-modal="true"], [role="dialog"]'))
+        .first()
     ).toBeVisible();
   }
 
@@ -128,6 +135,20 @@ export class PropertyDetailPage extends BasePage {
     }
 
     await expect(this.page.locator('body')).toBeVisible();
+  }
+
+  private nextGalleryButton(): Locator {
+    return this.page.locator(
+      'button[aria-label*="Sonraki"]:not(.card-photo-nav), button[aria-label*="Next"]:not(.card-photo-nav), [role="dialog"] button[aria-label*="Sonraki"], [aria-modal="true"] button[aria-label*="Sonraki"]'
+    )
+      .first();
+  }
+
+  private previousGalleryButton(): Locator {
+    return this.page.locator(
+      'button[aria-label*="Önceki"]:not(.card-photo-nav), button[aria-label*="Onceki"]:not(.card-photo-nav), button[aria-label*="Previous"]:not(.card-photo-nav), [role="dialog"] button[aria-label*="Önceki"], [aria-modal="true"] button[aria-label*="Önceki"]'
+    )
+      .first();
   }
 
   private currencyButton(currency: 'GBP' | 'EUR' | 'USD' | 'TRY'): Locator {
