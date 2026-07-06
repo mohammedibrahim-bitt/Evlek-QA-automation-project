@@ -139,7 +139,7 @@ npm run test:visual -- --update-snapshots
 - Failure screenshots, videos, and traces: `test-results/`
 - Visual snapshots: `tests/visual/visual.spec.ts-snapshots/` locally, ignored from Git
 
-When a test exposes a product issue, add it to `bug-reports/bugs.csv` and attach or reference the relevant screenshot/video path from `test-results/`.
+When a test exposes a product issue, add a short row to `bug-reports/bugs.csv` and create a full Markdown report in `bug-reports/BUG-###-short-title.md`. Keep generated evidence files out of Git; reference local Playwright report paths or GitHub Actions artifact names instead.
 
 The audit tests save and attach JSON evidence to the Playwright report:
 
@@ -156,8 +156,8 @@ These are current product findings documented in `bug-reports/bugs.csv`:
 
 | ID | Severity | Summary | Current status |
 | --- | --- | --- | --- |
-| `BUG-001` | Medium | Regional listing and city guide pages can emit `429` resource errors and failed Supabase fetches in the browser console. | New |
-| `BUG-002` | Low | `/fiyat-endeksi` meta description is 182 characters, over the configured 180-character SEO threshold. | New |
+| `BUG-001` | Medium | [Regional listing and city guide pages can emit `429` resource errors in the browser console.](bug-reports/BUG-001-regional-pages-429.md) | New |
+| `BUG-002` | Low | [`/fiyat-endeksi` meta description is 182 characters, over the configured 180-character SEO threshold.](bug-reports/BUG-002-meta-description-too-long.md) | New |
 
 ## Project Structure
 
@@ -182,6 +182,26 @@ These are current product findings documented in `bug-reports/bugs.csv`:
 
 ## Adding Bugs
 
-Use `bug-reports/bug-template.md` for detailed writeups, or append a row to `bug-reports/bugs.csv` with:
+Use two layers for bug reports:
 
-`ID, Title, URL, Device/Browser, Steps, Expected Result, Actual Result, Severity, Screenshot/Video, Suggested Fix, Status`
+1. Add a short tracker row to `bug-reports/bugs.csv`.
+2. Create a readable Markdown report from `bug-reports/bug-template.md`.
+
+The CSV stays short and easy to scan:
+
+`ID, Title, Severity, Status, Primary URL, Devices/Browsers, Full Report`
+
+The Markdown file should include:
+
+- URL or affected URLs
+- Device/browser
+- Preconditions
+- Steps to reproduce
+- Expected result
+- Actual result
+- Severity
+- Screenshot/video or artifact reference
+- Suggested fix
+- Status
+
+Do not commit generated Playwright evidence files. Keep screenshots, videos, traces, and reports in `test-results/`, `playwright-report/`, or GitHub Actions artifacts.
