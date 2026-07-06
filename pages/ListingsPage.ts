@@ -69,6 +69,14 @@ export class ListingsPage extends BasePage {
     await roomButton.click();
   }
 
+  async applyQuickRoomFilter(room = '2+1'): Promise<void> {
+    const roomButton = this.page.getByRole('button', { name: room, exact: true }).first();
+    await expect(roomButton).toBeVisible();
+    await roomButton.click();
+    await this.waitForPageReady();
+    await this.expectResultsOrEmptyState();
+  }
+
   async applyOpenedFilters(): Promise<void> {
     await this.page.getByRole('dialog', { name: /filtre|filters/i })
       .getByRole('button', { name: /ilan|show|results/i })
@@ -121,6 +129,15 @@ export class ListingsPage extends BasePage {
     await this.expectResultsOrEmptyState();
   }
 
+  async ensureListingAvailableForOpening(): Promise<void> {
+    if (await this.propertyLinks().first().isVisible().catch(() => false)) {
+      return;
+    }
+
+    await this.openSale();
+    await this.expectListingsVisible();
+  }
+
   async saveSearch(): Promise<void> {
     await this.page.getByRole('button', { name: /aramayı kaydet|save search/i }).first().click();
   }
@@ -158,8 +175,7 @@ export class ListingsPage extends BasePage {
   }
 
   private citySelect(): Locator {
-    return this.page.getByLabel(/şehir/i)
-      .or(this.page.locator('select').first())
+    return this.page.locator('select[aria-label*="Şehir" i], select[aria-label*="City" i], select')
       .first();
   }
 }

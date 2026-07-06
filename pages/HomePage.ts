@@ -22,6 +22,16 @@ export class HomePage extends BasePage {
     await this.waitForPageReady();
   }
 
+  async openSaleListings(): Promise<void> {
+    const saleLink = await firstVisible([
+      this.page.getByRole('link', { name: /sat.l.k|sale/i }),
+      this.page.locator('a[href="/satilik"]')
+    ]);
+
+    await saleLink.click();
+    await this.waitForPageReady();
+  }
+
   navigationLinks(): Locator {
     return this.page.locator('nav a[href], header a[href]').filter({ hasNot: this.page.locator('[aria-hidden="true"]') });
   }

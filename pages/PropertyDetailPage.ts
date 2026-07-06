@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { firstVisible } from '../utils/locators';
 
 export class PropertyDetailPage extends BasePage {
   constructor(page: Page) {
@@ -51,7 +52,24 @@ export class PropertyDetailPage extends BasePage {
   }
 
   async followListing(): Promise<void> {
-    await this.page.getByRole('button', { name: /takip et|follow/i }).first().click();
+    const action = await firstVisible([
+      this.page.getByRole('button', { name: /takip et|follow|favori|favorite|save/i }),
+      this.page.getByRole('link', { name: /takip et|follow|favori|favorite|save/i })
+    ]);
+
+    await action.click();
+  }
+
+  async useLoggedOutListingAction(): Promise<void> {
+    const favoriteAction = this.page.getByRole('button', { name: /takip et|follow|favori|favorite|save/i }).first();
+    if (await favoriteAction.isVisible().catch(() => false)) {
+      await favoriteAction.click();
+      await this.expectAuthGateVisible();
+      return;
+    }
+
+    await this.openContactOptions();
+    await this.expectContactOptionsVisible();
   }
 
   async expectAuthGateVisible(): Promise<void> {
@@ -99,6 +117,17 @@ export class PropertyDetailPage extends BasePage {
     await expect(
       this.page.getByRole('button', { name: /foto|photo|önceki|onceki|sonraki|next/i }).or(this.page.getByText('✕')).first()
     ).toBeVisible();
+  }
+
+  async closeGalleryIfOpen(): Promise<void> {
+    const closeButton = this.page.getByRole('button', { name: /close|kapat/i }).first();
+    if (await closeButton.isVisible().catch(() => false)) {
+      await closeButton.click();
+    } else {
+      await this.page.keyboard.press('Escape');
+    }
+
+    await expect(this.page.locator('body')).toBeVisible();
   }
 
   private currencyButton(currency: 'GBP' | 'EUR' | 'USD' | 'TRY'): Locator {
