@@ -16,4 +16,5 @@ test.describe('Evlek agent and property lister flows', () => {
     await addListing.expectLoggedOutGateVisible();
     await addListing.openLoginFromGate();
   });
+
 });

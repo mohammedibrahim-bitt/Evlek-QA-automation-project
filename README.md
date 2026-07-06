@@ -32,6 +32,14 @@ Black-box QA automation for Evlek using Playwright, TypeScript, and GitHub Actio
 
 4. Edit `.env` and set `BASE_URL` to the Evlek live or staging URL. Add only provided fake/test account credentials.
 
+5. Optional: create a saved signed-in browser session for account-only tests:
+
+   ```bash
+   npm run auth:setup
+   ```
+
+   This writes `.auth/test-user.json` locally. It can contain session cookies, so `.auth/` is ignored from Git.
+
 ## Run Tests
 
 All commands should be run from the project folder after `npm install`, `npx playwright install`, and `.env` setup.
@@ -43,6 +51,8 @@ All commands should be run from the project folder after `npm install`, `npx pla
 | `npm test` | Runs the normal QA suite across configured desktop and mobile projects, excluding visual snapshot tests. This includes journeys, audits, accessibility, language, links, SEO, and performance. | Main local or GitHub Actions command. | Optional |
 | `npm run test:all` | Runs absolutely every Playwright test, including visual regression snapshots. | Full local verification before a big release. | Optional |
 | `npm run test:headed` | Runs Playwright with visible browser windows. | Debugging a test step by watching the browser. | Optional |
+| `npm run auth:setup` | Logs in once with the provided test account and saves local browser storage state to `.auth/test-user.json`. | Preparing saved-session account tests. | Yes |
+| `npm run test:account` | Creates a fresh saved login session, then runs `@requires-account` tests on desktop Chromium. | Checking signed-in journeys with less repeated login noise. | Yes |
 | `npm run test:desktop` | Runs all tests in the `desktop-chromium` project only. | Checking desktop behavior quickly. | Optional |
 | `npm run test:mobile` | Runs all tests in the `mobile-chrome` project only. | Checking mobile behavior quickly. | Optional |
 | `npm run report` | Opens the Playwright HTML report from the last run. | Reviewing screenshots, videos, traces, and failures. | No |
@@ -58,7 +68,7 @@ All commands should be run from the project folder after `npm install`, `npx pla
 | `npm run test:buyer` | Buyer-style interactions such as mobile filters, currency switching, and gallery navigation. | No |
 | `npm run test:gated` | Cookie consent, save-search modal, and logged-out gated actions such as following a listing. | No |
 | `npm run test:user-flows` | Normal public user flows: property-type filtering, sorting, unrealistic search empty state, and save-search email validation. | No |
-| `npm run test:agent-flows` | Property lister/agent-style public flows, currently logged-out add-listing gate and login entry. | No |
+| `npm run test:agent-flows` | Property lister/agent-style flows: logged-out add-listing gate, login entry, and saved-session add-listing access without publishing. | Only for signed-in add-listing check |
 | `npm run test:a11y` | Keyboard focus and accessible-name smoke checks for important UI areas. | No |
 | `npm run test:language` | Language switching and localized page smoke checks for Turkish, English, Russian, German, and Arabic. | No |
 
@@ -90,7 +100,7 @@ Visual baselines are OS and browser-rendering sensitive. Baseline screenshots ar
 | `npm run test:tag:audit` | Tests marked `@audit`, including crawl, quality, SEO, link, and performance checks. |
 | `npm run test:tag:visual` | Tests marked `@visual`, the screenshot comparison suite. |
 | `npm run test:tag:mobile` | Tests marked `@mobile`, mobile-specific behavior checks. |
-| `npm run test:tag:requires-account` | Tests marked `@requires-account`, which need provided Evlek test credentials. |
+| `npm run test:tag:requires-account` | Tests marked `@requires-account`, which need provided Evlek test credentials. Use `npm run test:account` when you want saved-session setup first. |
 
 ### Useful Playwright Options
 
@@ -109,6 +119,8 @@ npm run test:visual -- --update-snapshots
 | --- | --- | --- | --- | --- | --- |
 | `npm test` | all except `@visual` | Normal full QA suite without visual snapshots | Desktop + mobile | Optional | Long |
 | `npm run test:all` | all | Full configured suite including visual checks | Desktop + mobile | Optional | Long |
+| `npm run auth:setup` | setup only | Creates `.auth/test-user.json` saved browser session | Desktop Chromium login | Yes | Short |
+| `npm run test:account` | `@requires-account` | Fresh saved-session setup plus account-required tests | Desktop Chromium | Yes | Medium |
 | `npm run test:desktop` | all | All tests in desktop Chromium | Desktop Chromium | Optional | Medium |
 | `npm run test:mobile` | all | All tests in mobile Chrome | Mobile Chrome | Optional | Medium |
 | `npm run test:smoke` | `@smoke` subset | Home smoke checks | All configured projects | No | Short |
@@ -117,7 +129,7 @@ npm run test:visual -- --update-snapshots
 | `npm run test:buyer` | `@mobile`, `@regression` | Mobile filters, currency switching, gallery navigation | All configured projects unless filtered | No | Medium |
 | `npm run test:gated` | `@smoke`, `@regression` | Cookie consent, save-search modal, logged-out follow gate | All configured projects | No | Medium |
 | `npm run test:user-flows` | `@regression` | Property-type filtering, sorting, empty search, save-search email validation | All configured projects | No | Medium |
-| `npm run test:agent-flows` | `@regression` | Logged-out add-listing gate and lister login entry | All configured projects | No | Short |
+| `npm run test:agent-flows` | `@regression`, `@requires-account` | Logged-out add-listing gate, lister login entry, and saved-session add-listing access without publishing | All configured projects | Only for signed-in add-listing check | Short |
 | `npm run test:a11y` | `@regression` | Keyboard focus and accessible-name smoke checks | All configured projects | No | Medium |
 | `npm run test:language` | `@regression` | TR, EN, RU, DE, AR language switch smoke checks | All configured projects | No | Medium |
 | `npm run test:audit` | `@audit` | Browser-level page audit, console errors, blank pages | All configured projects | No | Long |
@@ -134,7 +146,7 @@ npm run test:visual -- --update-snapshots
 - `@audit`: broad crawl, quality, SEO, link, and performance audits.
 - `@visual`: screenshot comparison coverage for approved UI baselines.
 - `@mobile`: mobile-specific behavior.
-- `@requires-account`: tests that need provided Evlek test credentials.
+- `@requires-account`: tests that need provided Evlek test credentials. Some use direct login to test auth itself; saved-session flows use `.auth/test-user.json` created by `npm run auth:setup`.
 
 ## Reports And Evidence
 
@@ -162,6 +174,7 @@ These are current product findings documented in `bug-reports/bugs.csv`:
 | --- | --- | --- | --- |
 | `BUG-001` | Medium | [Regional listing and city guide pages can emit `429` resource errors in the browser console.](bug-reports/BUG-001-regional-pages-429.md) | New |
 | `BUG-002` | Low | [`/fiyat-endeksi` meta description is 182 characters, over the configured 180-character SEO threshold.](bug-reports/BUG-002-meta-description-too-long.md) | New |
+| `BUG-003` | Info | [Signed-in add-listing access passes with saved browser session.](bug-reports/BUG-003-signed-in-add-listing-redirects-login.md) | Closed - automation timing |
 
 ## Project Structure
 
@@ -183,6 +196,7 @@ These are current product findings documented in `bug-reports/bugs.csv`:
 - The site audit deliberately skips URLs that look destructive, such as logout, delete, remove, destroy, and cancel paths.
 - Prefer fake data from `utils/fakeData.ts` or environment variables.
 - Keep secrets out of Git and store credentials in `.env` locally or GitHub Actions secrets in CI.
+- Keep `.auth/test-user.json` out of Git; it is a local saved browser session and may contain auth cookies.
 
 ## Adding Bugs
 

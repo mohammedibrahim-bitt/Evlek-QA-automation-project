@@ -31,6 +31,23 @@ export class AuthPage extends BasePage {
     await this.waitForPageReady();
   }
 
+  async loginAndWaitForAuthenticatedSession(email: string, password: string): Promise<void> {
+    await this.login(email, password);
+    await expect(this.dialog()).toBeHidden({ timeout: 15_000 });
+    await this.expectAuthenticatedSignal();
+
+    await this.page.waitForFunction(() => {
+      const storageKeys = [
+        ...Object.keys(window.localStorage),
+        ...Object.keys(window.sessionStorage)
+      ].join(' ').toLowerCase();
+      const cookies = document.cookie.toLowerCase();
+
+      return /auth|session|token|supabase|user/.test(storageKeys)
+        || /auth|session|token|supabase|user/.test(cookies);
+    }, undefined, { timeout: 5_000 }).catch(() => undefined);
+  }
+
   async submitEmptyLogin(): Promise<void> {
     await this.submit();
   }
@@ -50,8 +67,8 @@ export class AuthPage extends BasePage {
 
   async expectAuthenticatedSignal(): Promise<void> {
     await expect(
-      this.page.getByRole('link', { name: /account|profile|dashboard|logout|log out/i })
-        .or(this.page.getByRole('button', { name: /account|profile|dashboard|logout|log out/i }))
+      this.page.getByRole('link', { name: /account|profile|dashboard|logout|log out|profil|hesab|çıkış|cikis/i })
+        .or(this.page.getByRole('button', { name: /account|profile|dashboard|logout|log out|profil|hesab|çıkış|cikis/i }))
         .first()
     ).toBeVisible();
   }
