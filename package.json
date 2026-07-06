@@ -14,6 +14,7 @@
     "test:forms": "playwright test tests/journeys/auth.spec.ts tests/journeys/contact.spec.ts",
     "test:buyer": "playwright test tests/journeys/buyer-interactions.spec.ts",
     "test:gated": "playwright test tests/journeys/cookies.spec.ts tests/journeys/gated-actions.spec.ts",
+    "test:ux": "playwright test tests/journeys/user-experience.spec.ts",
     "test:a11y": "playwright test tests/journeys/accessibility.spec.ts",
     "test:language": "playwright test tests/journeys/language.spec.ts",
     "test:audit": "playwright test tests/audits/site-audit.spec.ts",

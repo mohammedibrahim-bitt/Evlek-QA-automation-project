@@ -84,6 +84,43 @@ export class ListingsPage extends BasePage {
     await this.waitForPageReady();
   }
 
+  async selectPropertyType(typePattern = /daire|apartment/i): Promise<void> {
+    const typeTab = this.page.getByRole('tab', { name: typePattern }).first();
+    await expect(typeTab).toBeVisible();
+    await typeTab.click();
+    await this.waitForPageReady();
+    await this.expectResultsOrEmptyState();
+  }
+
+  async sortByLowestPriceIfAvailable(): Promise<boolean> {
+    const sortButton = this.page.getByRole('button', { name: /s.rala|sort/i }).first();
+    if (!await sortButton.isVisible().catch(() => false)) {
+      return false;
+    }
+
+    await sortButton.click();
+
+    const lowestPrice = await firstVisible([
+      this.page.getByRole('option', { name: /fiyat|lowest price|price.*low/i }),
+      this.page.getByRole('button', { name: /fiyat|lowest price|price.*low/i }),
+      this.page.locator('button').filter({ hasText: /en d.+k fiyat|fiyat/i })
+    ]);
+
+    await lowestPrice.click();
+    await this.waitForPageReady();
+    await this.expectResultsOrEmptyState();
+    return true;
+  }
+
+  async expectResultsOrEmptyState(): Promise<void> {
+    await this.expectNoBlankPage();
+    await expect(this.page.locator('body')).toContainText(/ilan|emlak|sonu.|bulunamad.|no .*result|no .*found|property/i);
+  }
+
+  async expectNoResultsOrListingsVisible(): Promise<void> {
+    await this.expectResultsOrEmptyState();
+  }
+
   async saveSearch(): Promise<void> {
     await this.page.getByRole('button', { name: /aramayı kaydet|save search/i }).first().click();
   }
@@ -94,6 +131,19 @@ export class ListingsPage extends BasePage {
     await expect(dialog).toBeVisible();
     await expect(dialog.locator('input[type="email"]').first()).toBeVisible();
     await expect(dialog.getByRole('button', { name: /bildirimleri aç|enable notifications|notify/i }).first()).toBeVisible();
+  }
+
+  async submitInvalidSaveSearchEmail(email = 'not-an-email'): Promise<void> {
+    const dialog = this.page.getByRole('dialog').filter({ has: this.page.locator('input[type="email"]') }).first();
+    const emailInput = dialog.locator('input[type="email"]').first();
+    const submitButton = dialog.getByRole('button', { name: /bildirimleri|enable notifications|notify/i }).first();
+
+    await emailInput.fill(email);
+
+    const isInvalid = await emailInput.evaluate((input) => !(input as HTMLInputElement).validity.valid);
+    expect(isInvalid).toBe(true);
+    await expect(submitButton).toBeDisabled();
+    await expect(dialog).toBeVisible();
   }
 
   async openFirstProperty(): Promise<void> {

@@ -57,6 +57,7 @@ All commands should be run from the project folder after `npm install`, `npx pla
 | `npm run test:forms` | Login validation, invalid-login handling, optional successful login, and contact CTA behavior. | Only for successful login |
 | `npm run test:buyer` | Buyer-style interactions such as mobile filters, currency switching, and gallery navigation. | No |
 | `npm run test:gated` | Cookie consent, save-search modal, and logged-out gated actions such as following a listing. | No |
+| `npm run test:ux` | Normal user experience flows: property-type filtering, sorting, unrealistic search empty state, and save-search email validation. | No |
 | `npm run test:a11y` | Keyboard focus and accessible-name smoke checks for important UI areas. | No |
 | `npm run test:language` | Language switching and localized page smoke checks for Turkish, English, Russian, German, and Arabic. | No |
 
@@ -114,6 +115,7 @@ npm run test:visual -- --update-snapshots
 | `npm run test:forms` | `@smoke`, `@regression`, `@requires-account` | Login validation, invalid login, optional successful login, contact CTA | All configured projects | Only for successful login | Medium |
 | `npm run test:buyer` | `@mobile`, `@regression` | Mobile filters, currency switching, gallery navigation | All configured projects unless filtered | No | Medium |
 | `npm run test:gated` | `@smoke`, `@regression` | Cookie consent, save-search modal, logged-out follow gate | All configured projects | No | Medium |
+| `npm run test:ux` | `@regression` | Property-type filtering, sorting, empty search, save-search email validation | All configured projects | No | Medium |
 | `npm run test:a11y` | `@regression` | Keyboard focus and accessible-name smoke checks | All configured projects | No | Medium |
 | `npm run test:language` | `@regression` | TR, EN, RU, DE, AR language switch smoke checks | All configured projects | No | Medium |
 | `npm run test:audit` | `@audit` | Browser-level page audit, console errors, blank pages | All configured projects | No | Long |
