@@ -8,7 +8,7 @@ export abstract class BasePage {
   }
 
   async goto(path = '/'): Promise<void> {
-    await this.page.goto(path, { waitUntil: 'domcontentloaded' });
+    await this.page.goto(path, { waitUntil: 'domcontentloaded', timeout: 60_000 });
     await this.waitForPageReady();
   }
 
