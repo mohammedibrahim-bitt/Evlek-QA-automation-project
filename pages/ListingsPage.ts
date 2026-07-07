@@ -164,24 +164,27 @@ export class ListingsPage extends BasePage {
   }
 
   async openFirstProperty(): Promise<void> {
-    const firstProperty = await firstVisible([this.propertyLinks()]);
-    const href = await firstProperty.getAttribute('href');
+    const hrefs = await this.propertyLinks().evaluateAll((links) =>
+      links
+        .map((link) => link.getAttribute('href'))
+        .filter((href): href is string => Boolean(href))
+        .slice(0, 12)
+    );
 
-    if (href) {
-      await this.page.goto(href, { waitUntil: 'domcontentloaded', timeout: 20_000 });
+    for (const href of hrefs) {
+      await this.page.goto(new URL(href, this.page.url()).toString(), { waitUntil: 'domcontentloaded', timeout: 15_000 });
+      await this.waitForPageReady();
 
-      const loaded = await expect(this.page.locator('body')).not.toHaveText(/^\s*$/, { timeout: 8_000 })
-        .then(() => true)
+      const loadedProperty = await this.page.locator('body').innerText({ timeout: 5_000 })
+        .then((text) => !/[iİ]lan bulunamad|not found/i.test(text) && text.trim().length > 0)
         .catch(() => false);
 
-      if (!loaded) {
-        await this.page.goto(href, { waitUntil: 'domcontentloaded', timeout: 20_000 });
+      if (loadedProperty) {
+        return;
       }
-    } else {
-      await firstProperty.click();
     }
 
-    await this.waitForPageReady();
+    throw new Error('Could not find a property listing that opens a live property detail page.');
   }
 
   private searchInput(): Locator {

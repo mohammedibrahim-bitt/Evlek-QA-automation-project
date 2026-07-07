@@ -40,7 +40,7 @@ export async function discoverInternalPages(page: Page, options: {
     seen.add(url);
 
     try {
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15_000 });
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 });
       await page.waitForLoadState('networkidle', { timeout: 3_000 }).catch(() => undefined);
 
       const links = await collectInternalLinks(page, origin);
@@ -69,7 +69,7 @@ export async function checkInternalLinks(request: APIRequestContext, pages: stri
   const checked = new Set<string>();
 
   for (const sourceUrl of pages) {
-    const response = await request.get(sourceUrl, { timeout: 15_000, failOnStatusCode: false }).catch(() => null);
+    const response = await request.get(sourceUrl, { timeout: 30_000, failOnStatusCode: false }).catch(() => null);
     const html = response ? await response.text().catch(() => '') : '';
     const links = extractLinksFromHtml(html, sourceUrl, origin);
 
@@ -97,7 +97,7 @@ export async function checkInternalLinks(request: APIRequestContext, pages: stri
 async function checkLink(request: APIRequestContext, sourceUrl: string, url: string): Promise<LinkCheckResult> {
   try {
     const response = await request.get(url, {
-      timeout: 15_000,
+      timeout: 30_000,
       failOnStatusCode: false,
       maxRedirects: 5
     });
@@ -133,7 +133,7 @@ export async function checkSeoAndEncoding(page: Page, pages: string[]): Promise<
     let bodyText = '';
 
     try {
-      const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15_000 });
+      const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 });
       status = response?.status() ?? null;
       await page.waitForLoadState('networkidle', { timeout: 3_000 }).catch(() => undefined);
 

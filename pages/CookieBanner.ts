@@ -28,10 +28,10 @@ export class CookieBanner {
   }
 
   private acceptAllButton() {
-    return this.page.getByRole('button', { name: /tümünü kabul et|accept all/i }).first();
+    return this.page.getByRole('button', { name: /kabul et|accept all|accept/i }).first();
   }
 
   private requiredOnlyButton() {
-    return this.page.getByRole('button', { name: /sadece zorunlu|required only|necessary only/i }).first();
+    return this.page.getByRole('button', { name: /zorunlu|required only|necessary only/i }).first();
   }
 }

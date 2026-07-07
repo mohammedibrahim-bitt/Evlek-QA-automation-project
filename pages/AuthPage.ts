@@ -18,6 +18,17 @@ export class AuthPage extends BasePage {
 
   async openLoginModal(): Promise<void> {
     await this.goto('/?auth=login');
+
+    if (await this.dialog().waitFor({ state: 'visible', timeout: 3_000 }).then(() => true).catch(() => false)) {
+      return;
+    }
+
+    const loginButton = await firstVisible([
+      this.page.getByRole('button', { name: /giri\S*|login|log in|sign in/i }),
+      this.page.getByRole('link', { name: /giri\S*|login|log in|sign in/i })
+    ]);
+
+    await loginButton.click();
     await expect(this.dialog()).toBeVisible();
   }
 

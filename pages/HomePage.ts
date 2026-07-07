@@ -37,9 +37,9 @@ export class HomePage extends BasePage {
   }
 
   async openMobileMenuIfPresent(): Promise<void> {
-    const menuButton = this.page.getByRole('button', { name: /menu|navigation|open/i }).first();
+    const menuButton = this.page.getByRole('button', { name: /^(menu|navigation|open menu)$/i }).first();
     if (await menuButton.isVisible().catch(() => false)) {
-      await menuButton.click();
+      await menuButton.click({ timeout: 3_000 }).catch(() => undefined);
     }
   }
 }

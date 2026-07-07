@@ -2,3 +2,5 @@ ID,Title,Severity,Status,Primary URL,Devices/Browsers,Full Report
 BUG-001,"Regional listing pages emit 429 and failed data/resource errors in browser console",Medium,New,https://evlek.app/kiralik/girne,"Desktop Chrome; Mobile Chrome",bug-reports/BUG-001-regional-pages-429.md
 BUG-002,"Fiyat Endeksi page meta description is longer than recommended SEO threshold",Low,New,https://evlek.app/fiyat-endeksi,"Desktop Chrome",bug-reports/BUG-002-meta-description-too-long.md
 BUG-003,"Signed-in add-listing access passes with saved browser session",Info,Closed - automation timing,https://evlek.app/ilan-ekle,"Desktop Chrome",bug-reports/BUG-003-signed-in-add-listing-redirects-login.md
+BUG-004,"Public property cards link to deleted or unavailable property pages",High,New,https://evlek.app/satilik,"Desktop Chrome; Desktop Firefox; Mobile Chrome; Mobile Safari",bug-reports/BUG-004-homepage-featured-property-links-404.md
+BUG-005,"Provided QA test account login does not complete after submit",High,New,https://evlek.app/?auth=login,"Desktop Chrome",bug-reports/BUG-005-test-account-login-stuck.md
