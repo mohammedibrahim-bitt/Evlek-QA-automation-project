@@ -31,6 +31,20 @@ test.describe('Evlek signed-in agent and property lister flows', () => {
     await addListing.expectNoPublishOrDraftActionTaken();
   });
 
+  test('@regression @requires-account signed-in lister can prepare fake draft details without publishing', async ({ page }) => {
+    test.skip(!hasTestAccount(), 'Set TEST_USER_EMAIL and TEST_USER_PASSWORD with a provided test account.');
+    test.skip(!hasSavedAuthState, 'Run npm run auth:setup before saved-session account flows.');
+
+    const addListing = new AddListingPage(page);
+
+    await addListing.open();
+    test.skip(
+      !await addListing.hasDraftPreparationPermission(),
+      'The current test account is not Solo/Ekip, so Evlek does not expose fillable draft listing fields.'
+    );
+    await addListing.prepareDraftDataWithoutPublishing();
+  });
+
   test('@regression @requires-account add-listing empty continue shows validation without publishing', async ({ page }) => {
     test.skip(!hasTestAccount(), 'Set TEST_USER_EMAIL and TEST_USER_PASSWORD with a provided test account.');
     test.skip(!hasSavedAuthState, 'Run npm run auth:setup before saved-session account flows.');

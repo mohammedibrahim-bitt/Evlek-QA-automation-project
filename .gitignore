@@ -6,3 +6,5 @@ test-results/
 blob-report/
 tests/visual/visual.spec.ts-snapshots/
 *.log
+bug-reports/generated/*
+!bug-reports/generated/README.md

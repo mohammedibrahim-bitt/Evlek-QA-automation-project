@@ -52,6 +52,7 @@ All commands should be run from the project folder after `npm install`, `npx pla
 | `npm run test:all` | Runs absolutely every Playwright test, including visual regression snapshots. | Full local verification before a big release. | Optional |
 | `npm run test:health` | Runs the stable health check: TypeScript validation, homepage smoke tests, and language switching tests. | Quick confidence check after website or test-project changes, especially while known product bugs are still open. | No |
 | `npm run preflight` | Checks the configured site is reachable, the homepage has content, login entry opens, at least one property detail is live, and local account variables exist. Warnings do not fail unless `PREFLIGHT_STRICT=1` is set. | Run this before deeper suites when the website changed or many tests suddenly fail. | Optional |
+| `npm run test:readiness` | Runs the live-site readiness check for listing data: sale listing page, property detail availability, contact action, and gallery/photo entry point. | Run before buyer/contact/gallery suites to confirm live site data can support them. | No |
 | `npm run test:headed` | Runs Playwright with visible browser windows. | Debugging a test step by watching the browser. | Optional |
 | `npm run auth:setup` | Logs in once with the provided test account and saves local browser storage state to `.auth/test-user.json`. | Preparing saved-session account tests. | Yes |
 | `npm run test:account` | Creates a fresh saved login session, then runs `@requires-account` tests on desktop Chromium. | Checking signed-in journeys with less repeated login noise. | Yes |
@@ -70,7 +71,7 @@ All commands should be run from the project folder after `npm install`, `npx pla
 | `npm run test:buyer` | Buyer-style interactions such as mobile filters, currency switching, and gallery navigation. | No |
 | `npm run test:gated` | Cookie consent, save-search modal, and logged-out gated actions such as following a listing. | No |
 | `npm run test:user-flows` | Normal public user flows: property-type filtering, sorting, unrealistic search empty state, and save-search email validation. | No |
-| `npm run test:agent-flows` | Property lister/agent-style flows: logged-out add-listing gate, login entry, saved-session add-listing access, form structure, and empty-form validation without publishing. | Only for signed-in add-listing checks |
+| `npm run test:agent-flows` | Property lister/agent-style flows: logged-out add-listing gate, login entry, saved-session add-listing access, form structure, fake draft-field preparation for eligible Solo/Ekip accounts, and empty-form validation without publishing. | Only for signed-in add-listing checks |
 | `npm run test:a11y` | Keyboard focus and accessible-name smoke checks for important UI areas. | No |
 | `npm run test:language` | Language switching and localized page smoke checks for Turkish, English, Russian, German, and Arabic. | No |
 
@@ -123,6 +124,7 @@ npm run test:visual -- --update-snapshots
 | `npm run test:all` | all | Full configured suite including visual checks | Desktop + mobile | Optional | Long |
 | `npm run test:health` | `@smoke`, language regression, TypeScript | Stable project health check: lint, home smoke, language switching | Desktop + mobile for Playwright portions | No | Medium |
 | `npm run preflight` | setup check | Site reachability, homepage content, login entry, live listing availability, local test-account env presence | Desktop Chromium script | Optional | Short |
+| `npm run test:readiness` | `@readiness` | Live listing data readiness for sale listings, property detail pages, contact actions, and gallery/photo entry points | Desktop + mobile | No | Short |
 | `npm run auth:setup` | setup only | Creates `.auth/test-user.json` saved browser session | Desktop Chromium login | Yes | Short |
 | `npm run test:account` | `@requires-account` | Fresh saved-session setup plus account-required tests | Desktop Chromium | Yes | Medium |
 | `npm run test:desktop` | all | All tests in desktop Chromium | Desktop Chromium | Optional | Medium |
@@ -133,7 +135,7 @@ npm run test:visual -- --update-snapshots
 | `npm run test:buyer` | `@mobile`, `@regression` | Mobile filters, currency switching, gallery navigation | All configured projects unless filtered | No | Medium |
 | `npm run test:gated` | `@smoke`, `@regression` | Cookie consent, save-search modal, logged-out follow gate | All configured projects | No | Medium |
 | `npm run test:user-flows` | `@regression` | Property-type filtering, sorting, empty search, save-search email validation | All configured projects | No | Medium |
-| `npm run test:agent-flows` | `@regression`, `@requires-account` | Logged-out add-listing gate, lister login entry, saved-session add-listing access, form structure, and empty-form validation without publishing | All configured projects | Only for signed-in add-listing checks | Short |
+| `npm run test:agent-flows` | `@regression`, `@requires-account` | Logged-out add-listing gate, lister login entry, saved-session add-listing access, form structure, fake draft-field preparation for eligible Solo/Ekip accounts, and empty-form validation without publishing | All configured projects | Only for signed-in add-listing checks | Short |
 | `npm run test:a11y` | `@regression` | Keyboard focus and accessible-name smoke checks | All configured projects | No | Medium |
 | `npm run test:language` | `@regression` | TR, EN, RU, DE, AR language switch smoke checks | All configured projects | No | Medium |
 | `npm run test:audit` | `@audit` | Browser-level page audit, console errors, blank pages | All configured projects | No | Long |
@@ -157,9 +159,10 @@ npm run test:visual -- --update-snapshots
 - HTML report: `playwright-report/`
 - JUnit report: `test-results/junit.xml`
 - Failure screenshots, videos, and traces: `test-results/`
+- Generated failed-test bug drafts: `bug-reports/generated/latest-failures.csv` and `bug-reports/generated/latest-failures.md`
 - Visual snapshots: `tests/visual/visual.spec.ts-snapshots/` locally, ignored from Git
 
-When a test exposes a product issue, add a short row to `bug-reports/bugs.csv` and create a full Markdown report in `bug-reports/BUG-###-short-title.md`. Keep generated evidence files out of Git; reference local Playwright report paths or GitHub Actions artifact names instead.
+When a test fails, the custom reporter writes draft bug-report rows with title, current URL, project/browser, failure message, and screenshot/video/trace paths when Playwright provides them. Treat these generated files as triage helpers, not final confirmed bugs. When a failure is a real product issue, add a short row to `bug-reports/bugs.csv` and create a full Markdown report in `bug-reports/BUG-###-short-title.md`. Keep generated evidence files out of Git; reference local Playwright report paths or GitHub Actions artifact names instead.
 
 The audit tests save and attach JSON evidence to the Playwright report:
 
