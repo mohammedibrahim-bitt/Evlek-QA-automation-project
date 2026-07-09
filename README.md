@@ -51,6 +51,7 @@ All commands should be run from the project folder after `npm install`, `npx pla
 | `npm test` | Runs the normal QA suite across configured desktop and mobile projects, excluding visual snapshot tests. This includes journeys, audits, accessibility, language, links, SEO, and performance. | Main local or GitHub Actions command. | Optional |
 | `npm run test:all` | Runs absolutely every Playwright test, including visual regression snapshots. | Full local verification before a big release. | Optional |
 | `npm run test:health` | Runs the stable health check: TypeScript validation, homepage smoke tests, and language switching tests. | Quick confidence check after website or test-project changes, especially while known product bugs are still open. | No |
+| `npm run preflight` | Checks the configured site is reachable, the homepage has content, login entry opens, at least one property detail is live, and local account variables exist. Warnings do not fail unless `PREFLIGHT_STRICT=1` is set. | Run this before deeper suites when the website changed or many tests suddenly fail. | Optional |
 | `npm run test:headed` | Runs Playwright with visible browser windows. | Debugging a test step by watching the browser. | Optional |
 | `npm run auth:setup` | Logs in once with the provided test account and saves local browser storage state to `.auth/test-user.json`. | Preparing saved-session account tests. | Yes |
 | `npm run test:account` | Creates a fresh saved login session, then runs `@requires-account` tests on desktop Chromium. | Checking signed-in journeys with less repeated login noise. | Yes |
@@ -121,6 +122,7 @@ npm run test:visual -- --update-snapshots
 | `npm test` | all except `@visual` | Normal full QA suite without visual snapshots | Desktop + mobile | Optional | Long |
 | `npm run test:all` | all | Full configured suite including visual checks | Desktop + mobile | Optional | Long |
 | `npm run test:health` | `@smoke`, language regression, TypeScript | Stable project health check: lint, home smoke, language switching | Desktop + mobile for Playwright portions | No | Medium |
+| `npm run preflight` | setup check | Site reachability, homepage content, login entry, live listing availability, local test-account env presence | Desktop Chromium script | Optional | Short |
 | `npm run auth:setup` | setup only | Creates `.auth/test-user.json` saved browser session | Desktop Chromium login | Yes | Short |
 | `npm run test:account` | `@requires-account` | Fresh saved-session setup plus account-required tests | Desktop Chromium | Yes | Medium |
 | `npm run test:desktop` | all | All tests in desktop Chromium | Desktop Chromium | Optional | Medium |

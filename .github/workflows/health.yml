@@ -28,6 +28,11 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
+      - name: Run preflight
+        run: npm run preflight
+        env:
+          BASE_URL: ${{ secrets.EVLEK_BASE_URL || 'https://evlek.app/' }}
+
       - name: Run health check
         run: npm run test:health
         env:

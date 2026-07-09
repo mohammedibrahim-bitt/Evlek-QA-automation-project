@@ -7,6 +7,7 @@
     "test": "playwright test --grep-invert @visual",
     "test:all": "playwright test",
     "test:health": "npm run lint && npm run test:smoke && npm run test:language",
+    "preflight": "node scripts/preflight.mjs",
     "test:headed": "playwright test --headed",
     "auth:setup": "node scripts/create-auth-state.js",
     "test:account": "npm run auth:setup && playwright test --grep @requires-account --project=desktop-chromium",
