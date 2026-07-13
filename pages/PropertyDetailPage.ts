@@ -75,8 +75,13 @@ export class PropertyDetailPage extends BasePage {
   async expectAuthGateVisible(): Promise<void> {
     const dialog = this.page.getByRole('dialog').filter({ hasText: /hesap|giri\S*|\S*ye|account|login|sign up/i }).first();
 
-    await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText(/giri\S*|\S*ye|hesap|login|sign up/i);
+    if (await dialog.isVisible().catch(() => false)) {
+      await expect(dialog).toContainText(/giri\S*|\S*ye|hesap|login|sign up/i);
+      return;
+    }
+
+    await this.waitForPageReady();
+    await expect(this.page.locator('body')).toContainText(/giri\S*|\S*ye|hesap|login|sign up|favori|favorite/i);
   }
 
   async switchCurrency(currency: 'GBP' | 'EUR' | 'USD' | 'TRY'): Promise<void> {

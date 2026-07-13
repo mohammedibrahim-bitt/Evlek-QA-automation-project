@@ -55,6 +55,10 @@ export class ListingsPage extends BasePage {
     await this.expectResultsOrEmptyState();
   }
 
+  async hasVisibleCitySelect(): Promise<boolean> {
+    return this.citySelect().isVisible().catch(() => false);
+  }
+
   async openFilters(): Promise<void> {
     const filterButton = this.page.getByRole('button', { name: /^(filtre|filtreler|filters)$/i }).first();
     await expect(filterButton).toBeVisible();
