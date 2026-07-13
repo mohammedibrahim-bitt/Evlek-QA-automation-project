@@ -53,6 +53,7 @@ All commands should be run from the project folder after `npm install`, `npx pla
 | `npm run test:health` | Runs the stable health check: TypeScript validation, homepage smoke tests, and language switching tests. | Quick confidence check after website or test-project changes, especially while known product bugs are still open. | No |
 | `npm run preflight` | Checks the configured site is reachable, the homepage has content, login entry opens, at least one property detail is live, and local account variables exist. Warnings do not fail unless `PREFLIGHT_STRICT=1` is set. | Run this before deeper suites when the website changed or many tests suddenly fail. | Optional |
 | `npm run test:readiness` | Runs the live-site readiness check for listing data: sale listing page, property detail availability, contact action, and gallery/photo entry point. | Run before buyer/contact/gallery suites to confirm live site data can support them. | No |
+| `npm run test:routes` | Checks important public/protected route families still load, are not blank, and show expected content or a valid login gate. | Quick route-change monitor after Evlek URL or navigation updates. | No |
 | `npm run test:headed` | Runs Playwright with visible browser windows. | Debugging a test step by watching the browser. | Optional |
 | `npm run auth:setup` | Logs in once with the provided test account and saves local browser storage state to `.auth/test-user.json`. | Preparing saved-session account tests. | Yes |
 | `npm run test:account` | Creates a fresh saved login session, then runs `@requires-account` tests on desktop Chromium. | Checking signed-in journeys with less repeated login noise. | Yes |
@@ -83,6 +84,7 @@ All commands should be run from the project folder after `npm install`, `npx pla
 | `npm run test:links` | Internal broken-link checks using discovered site links and HTTP status validation. | No |
 | `npm run test:seo` | SEO and encoding checks such as page title, meta description, canonical URL, `html lang`, and obvious mojibake. | No |
 | `npm run test:performance` | Core-page performance smoke checks using DOMContentLoaded, load event, first visible content, and failed request counts. | No |
+| `npm run test:routes` | Important route monitor for `/`, listing pages, add-listing, dashboard, favorites, and localized home pages. | No |
 | `npm run test:quality` | Runs the broken-link and SEO/encoding audits together. | No |
 
 ### Visual Regression Tests
@@ -125,6 +127,7 @@ npm run test:visual -- --update-snapshots
 | `npm run test:health` | `@smoke`, language regression, TypeScript | Stable project health check: lint, home smoke, language switching | Desktop + mobile for Playwright portions | No | Medium |
 | `npm run preflight` | setup check | Site reachability, homepage content, login entry, live listing availability, local test-account env presence | Desktop Chromium script | Optional | Short |
 | `npm run test:readiness` | `@readiness` | Live listing data readiness for sale listings, property detail pages, contact actions, and gallery/photo entry points | Desktop + mobile | No | Short |
+| `npm run test:routes` | `@smoke`, `@routes` | Important public/protected route families load without blank pages, 404s, or broken auth gates | All configured projects | No | Short |
 | `npm run auth:setup` | setup only | Creates `.auth/test-user.json` saved browser session | Desktop Chromium login | Yes | Short |
 | `npm run test:account` | `@requires-account` | Fresh saved-session setup plus account-required tests | Desktop Chromium | Yes | Medium |
 | `npm run test:desktop` | all | All tests in desktop Chromium | Desktop Chromium | Optional | Medium |
