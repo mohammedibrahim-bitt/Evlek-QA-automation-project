@@ -9,35 +9,41 @@ export class PropertyDetailPage extends BasePage {
 
   async expectLoaded(): Promise<void> {
     await this.expectNoBlankPage();
-    await expect(this.page.locator('h1').first()).toContainText(/sat\S*l\S*k|kiral\S*k|g\S*nl\S*k|ilan/i);
-    await expect(this.page.locator('body')).toContainText(/fiyat|galeri|emlak|ilan/i);
+    await expect(this.page.locator('h1').first()).toContainText(
+      /sat\S*l\S*k|kiral\S*k|g\S*nl\S*k|ilan|for sale|for rent|sale|rent|property|listing/i
+    );
+    await expect(this.page.locator('body')).toContainText(/fiyat|price|galeri|gallery|emlak|ilan|property/i);
   }
 
   async expectCorePropertyInformation(): Promise<void> {
     const body = this.page.locator('body');
 
-    await expect(body).toContainText(/sat\S*l\S*k|kiral\S*k|g\S*nl\S*k/i);
+    await expect(body).toContainText(/sat\S*l\S*k|kiral\S*k|g\S*nl\S*k|for sale|for rent|sale|rent/i);
     await expect(body).toContainText(/£|€|\$|₺|GBP|EUR|USD|TRY/i);
-    await expect(body).toContainText(/yatak|banyo|m²|m2|a\S*iklama|\S*zellik/i);
-    await expect(body).toContainText(/konum|lefkosa|lefko\S*a|girne|gazima\S*usa|iskele|g\S*zelyurt|lefke/i);
+    await expect(body).toContainText(/yatak|bed|banyo|bath|m²|m2|a\S*iklama|description|\S*zellik|feature/i);
+    await expect(body).toContainText(
+      /konum|location|lefkosa|lefko\S*a|nicosia|girne|kyrenia|gazima\S*usa|famagusta|iskele|g\S*zelyurt|lefke/i
+    );
   }
 
   async expectMediaAndActionsVisible(): Promise<void> {
     await expect(
-      this.page.getByRole('button', { name: /foto\S*raf|\S*nizleme|galeri/i })
-        .or(this.page.getByText(/foto\S*raf|galeri/i))
+      this.page.getByRole('button', { name: /foto\S*raf|\S*nizleme|galeri|photo|gallery/i })
+        .or(this.page.getByText(/foto\S*raf|galeri|photo|gallery/i))
         .first()
     ).toBeVisible();
 
     await expect(
-      this.page.getByRole('button', { name: /whatsapp|telefon|ileti\S*im|payla\S*|takip/i })
-        .or(this.page.getByRole('link', { name: /whatsapp|telefon|ileti\S*im|payla\S*|takip/i }))
+      this.page.getByRole('button', { name: /whatsapp|telefon|phone|contact|ileti\S*im|payla\S*|share|takip|follow/i })
+        .or(this.page.getByRole('link', { name: /whatsapp|telefon|phone|contact|ileti\S*im|payla\S*|share|takip|follow/i }))
         .first()
     ).toBeVisible();
   }
 
   async openContactOptions(): Promise<void> {
-    const contactOptions = this.page.getByRole('button', { name: /payla\S* \/ ileti\S*im se\S*enekleri|ileti\S*im|payla\S*/i }).first();
+    const contactOptions = this.page.getByRole('button', {
+      name: /payla\S* \/ ileti\S*im se\S*enekleri|ileti\S*im|payla\S*|contact|share/i
+    }).first();
     if (await contactOptions.isVisible().catch(() => false)) {
       await contactOptions.click();
     }
@@ -45,8 +51,8 @@ export class PropertyDetailPage extends BasePage {
 
   async expectContactOptionsVisible(): Promise<void> {
     await expect(
-      this.page.getByRole('button', { name: /whatsapp|telefon/i })
-        .or(this.page.getByRole('link', { name: /whatsapp|telefon/i }))
+      this.page.getByRole('button', { name: /whatsapp|telefon|phone|contact/i })
+        .or(this.page.getByRole('link', { name: /whatsapp|telefon|phone|contact/i }))
         .first()
     ).toBeVisible();
   }
@@ -101,8 +107,8 @@ export class PropertyDetailPage extends BasePage {
   }
 
   async openGallery(): Promise<void> {
-    const galleryButton = this.page.getByRole('region', { name: /ilan foto\S*raf/i })
-      .getByRole('button', { name: /foto\S*raf|photo|t\S*m .*foto/i })
+    const galleryButton = this.page.getByRole('region', { name: /ilan foto\S*raf|photos|gallery/i })
+      .getByRole('button', { name: /foto\S*raf|photo|t\S*m .*foto|gallery/i })
       .or(this.page.getByRole('button', { name: /foto\S*raf|photo|gallery|galeri|t\S*m .*foto/i }))
       .first();
 
@@ -116,6 +122,13 @@ export class PropertyDetailPage extends BasePage {
     await expect(this.previousGalleryButton()).toBeVisible();
   }
 
+  async hasGalleryNavigation(): Promise<boolean> {
+    return Boolean(await firstVisible([
+      this.nextGalleryButton(),
+      this.previousGalleryButton()
+    ]).catch(() => null));
+  }
+
   async goToNextGalleryPhoto(): Promise<void> {
     const nextButton = this.nextGalleryButton();
 
@@ -125,7 +138,7 @@ export class PropertyDetailPage extends BasePage {
 
   async expectGalleryStillOpen(): Promise<void> {
     await expect(
-      this.page.getByRole('button', { name: /foto|photo|\S*nceki|onceki|sonraki|next|kapat|close/i })
+      this.page.getByRole('button', { name: /foto|photo|\S*nceki|onceki|previous|sonraki|next|kapat|close/i })
         .or(this.page.locator('[aria-modal="true"], [role="dialog"]'))
         .first()
     ).toBeVisible();
@@ -144,14 +157,14 @@ export class PropertyDetailPage extends BasePage {
 
   private nextGalleryButton(): Locator {
     return this.page.locator(
-      'button[aria-label*="Sonraki"]:not(.card-photo-nav), button[aria-label*="Next"]:not(.card-photo-nav), [role="dialog"] button[aria-label*="Sonraki"], [aria-modal="true"] button[aria-label*="Sonraki"]'
+      'button[aria-label*="Sonraki"]:not(.card-photo-nav), button[aria-label*="Next"]:not(.card-photo-nav), [role="dialog"] button[aria-label*="Sonraki"], [role="dialog"] button[aria-label*="Next"], [aria-modal="true"] button[aria-label*="Sonraki"], [aria-modal="true"] button[aria-label*="Next"]'
     )
       .first();
   }
 
   private previousGalleryButton(): Locator {
     return this.page.locator(
-      'button[aria-label*="Önceki"]:not(.card-photo-nav), button[aria-label*="Onceki"]:not(.card-photo-nav), button[aria-label*="Previous"]:not(.card-photo-nav), [role="dialog"] button[aria-label*="Önceki"], [aria-modal="true"] button[aria-label*="Önceki"]'
+      'button[aria-label*="Onceki"]:not(.card-photo-nav), button[aria-label*="Previous"]:not(.card-photo-nav), [role="dialog"] button[aria-label*="Onceki"], [role="dialog"] button[aria-label*="Previous"], [aria-modal="true"] button[aria-label*="Onceki"], [aria-modal="true"] button[aria-label*="Previous"]'
     )
       .first();
   }
