@@ -162,6 +162,12 @@ npm run test:visual -- --update-snapshots
 - Generated failed-test bug drafts: `bug-reports/generated/latest-failures.csv` and `bug-reports/generated/latest-failures.md`
 - Visual snapshots: `tests/visual/visual.spec.ts-snapshots/` locally, ignored from Git
 
+GitHub Actions uploads these as downloadable artifacts after each run, even when tests fail:
+
+- `playwright-report` or `health-playwright-report`
+- `test-results` or `health-test-results`
+- `generated-bug-drafts` or `health-generated-bug-drafts`
+
 When a test fails, the custom reporter writes draft bug-report rows with title, current URL, project/browser, failure message, and screenshot/video/trace paths when Playwright provides them. Treat these generated files as triage helpers, not final confirmed bugs. When a failure is a real product issue, add a short row to `bug-reports/bugs.csv` and create a full Markdown report in `bug-reports/BUG-###-short-title.md`. Keep generated evidence files out of Git; reference local Playwright report paths or GitHub Actions artifact names instead.
 
 The audit tests save and attach JSON evidence to the Playwright report:

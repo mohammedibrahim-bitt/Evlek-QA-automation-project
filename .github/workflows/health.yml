@@ -44,6 +44,7 @@ jobs:
         with:
           name: health-playwright-report
           path: playwright-report/
+          if-no-files-found: ignore
           retention-days: 7
 
       - name: Upload test results
@@ -52,4 +53,14 @@ jobs:
         with:
           name: health-test-results
           path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload generated bug drafts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: health-generated-bug-drafts
+          path: bug-reports/generated/
+          if-no-files-found: ignore
           retention-days: 7
