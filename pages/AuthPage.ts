@@ -1,6 +1,13 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
-import { firstVisible } from '../utils/locators';
+import {
+  findEmailInput,
+  findLoginSubmit,
+  findPasswordInput,
+  isSignedIn,
+  loginDialog,
+  openLoginSurface
+} from '../utils/authCapabilities';
 
 export class AuthPage extends BasePage {
   constructor(page: Page) {
@@ -17,19 +24,8 @@ export class AuthPage extends BasePage {
   }
 
   async openLoginModal(): Promise<void> {
-    await this.goto('/?auth=login');
-
-    if (await this.dialog().waitFor({ state: 'visible', timeout: 3_000 }).then(() => true).catch(() => false)) {
-      return;
-    }
-
-    const loginButton = await firstVisible([
-      this.page.getByRole('button', { name: /giri\S*|login|log in|sign in/i }),
-      this.page.getByRole('link', { name: /giri\S*|login|log in|sign in/i })
-    ]);
-
-    await loginButton.click();
-    await expect(this.dialog()).toBeVisible();
+    const opened = await openLoginSurface(this.page);
+    expect(opened, 'Login modal should open from the configured login entry.').toBe(true);
   }
 
   async login(email: string, password: string): Promise<void> {
@@ -44,8 +40,7 @@ export class AuthPage extends BasePage {
 
   async loginAndWaitForAuthenticatedSession(email: string, password: string): Promise<void> {
     await this.login(email, password);
-    await expect(this.dialog()).toBeHidden({ timeout: 15_000 });
-    await this.expectAuthenticatedSignal();
+    await expect.poll(() => isSignedIn(this.page), { timeout: 15_000 }).toBe(true);
 
     await this.page.waitForFunction(() => {
       const storageKeys = [
@@ -73,36 +68,32 @@ export class AuthPage extends BasePage {
   }
 
   async expectInvalidLoginMessage(): Promise<void> {
-    await expect(this.dialog()).toContainText(/e-posta veya şifre hatalı|hatalı|geçersiz|invalid|incorrect/i);
+    await expect(this.dialog()).toContainText(/e-posta veya \S*ifre hatal\S*|hatal\S*|ge\S*ersiz|invalid|incorrect/i);
   }
 
   async expectAuthenticatedSignal(): Promise<void> {
-    await expect(
-      this.page.getByRole('link', { name: /account|profile|dashboard|logout|log out|profil|hesab|çıkış|cikis/i })
-        .or(this.page.getByRole('button', { name: /account|profile|dashboard|logout|log out|profil|hesab|çıkış|cikis/i }))
-        .first()
-    ).toBeVisible();
+    await expect.poll(() => isSignedIn(this.page), { timeout: 15_000 }).toBe(true);
   }
 
   private dialog(): Locator {
-    return this.page.getByRole('dialog');
+    return loginDialog(this.page);
   }
 
   private async emailInput(): Promise<Locator> {
-    return firstVisible([
-      this.dialog().getByLabel(/e-posta|email|e-mail/i),
-      this.dialog().locator('input[type="email"]')
-    ]);
+    const input = await findEmailInput(this.page);
+    expect(input, 'Login email field should be visible.').not.toBeNull();
+    return input!;
   }
 
   private async passwordInput(): Promise<Locator> {
-    return firstVisible([
-      this.dialog().getByLabel(/şifre|password/i),
-      this.dialog().locator('input[type="password"]')
-    ]);
+    const input = await findPasswordInput(this.page);
+    expect(input, 'Login password field should be visible.').not.toBeNull();
+    return input!;
   }
 
   private async submit(): Promise<void> {
-    await this.dialog().getByRole('button', { name: 'Devam et', exact: true }).click();
+    const submit = await findLoginSubmit(this.page);
+    expect(submit, 'Login submit button should be visible.').not.toBeNull();
+    await submit!.click();
   }
 }

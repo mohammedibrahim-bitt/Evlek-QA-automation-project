@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { expectLoginInputsVisible, isLoginModalVisible, openLoginSurface } from '../utils/authCapabilities';
 
 type DraftListingData = {
   title: string;
@@ -25,7 +26,7 @@ export class AddListingPage extends BasePage {
   }
 
   async expectLoggedOutGateVisible(): Promise<void> {
-    await expect(this.page).toHaveURL(/\/ilan-ekle|auth=login.*redirect=%2Filan-ekle/i);
+    await expect(this.page).toHaveURL(/\/ilan-ekle|auth=login.*redirect=%2F(?:dashboard%2F)?ilan-ekle/i);
     await expect(this.page.locator('body')).toContainText(/giri\S* yap|login|ilan eklemek|yeni ilan/i);
     await expect(
       this.page.getByRole('button', { name: /giri\S* yap|login/i })
@@ -35,6 +36,16 @@ export class AddListingPage extends BasePage {
   }
 
   async openLoginFromGate(): Promise<void> {
+    if (await isLoginModalVisible(this.page)) {
+      await expectLoginInputsVisible(this.page);
+      return;
+    }
+
+    if (await openLoginSurface(this.page)) {
+      await expectLoginInputsVisible(this.page);
+      return;
+    }
+
     const login = this.page.getByRole('button', { name: /giri\S* yap|login/i })
       .or(this.page.getByRole('link', { name: /giri\S* yap|login/i }))
       .first();

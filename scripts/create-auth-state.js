@@ -26,21 +26,34 @@ if (!email || !password) {
     page.setDefaultTimeout(15_000);
 
     await page.goto('/?auth=login', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 5_000 }).catch(() => undefined);
 
-    const emailInput = page.locator('input[type="email"][aria-label="E-posta"], input[type="email"][placeholder="E-posta adresi"]').first();
+    const emailInput = page.locator('input[type="email"], input[autocomplete="email"]').first();
+    const passwordInput = page.locator('input[type="password"], input[autocomplete="current-password"]').first();
     const emailVisible = await emailInput.isVisible({ timeout: 10_000 }).catch(() => false);
 
     if (!emailVisible) {
-      await page.getByRole('button', { name: /giri\S* yap|login|sign in/i }).first().click();
+      await page.getByRole('button', { name: /giri\S* yap|login|sign in/i })
+        .or(page.getByRole('link', { name: /giri\S* yap|login|sign in/i }))
+        .first()
+        .click();
     }
 
     await expect(emailInput).toBeVisible({ timeout: 15_000 });
+    await expect(passwordInput).toBeVisible({ timeout: 15_000 });
 
     await emailInput.fill(email);
-    await page.locator('input[type="password"]').first().fill(password);
-    await page.locator('button[type="submit"]').filter({ hasText: /devam et|login|sign in/i }).first().click();
+    await passwordInput.fill(password);
+    await page.locator('button[type="submit"]')
+      .filter({ hasText: /devam et|login|sign in|giri\S*/i })
+      .first()
+      .click();
 
-    await expect(emailInput).toBeHidden({ timeout: 15_000 });
+    await expect.poll(async () => {
+      const body = await page.locator('body').innerText().catch(() => '');
+      return /ilanlar\S*m|profil ve g\S*ven|plan ve limitler|çıkış yap|cikis yap|dashboard|profile/i.test(body);
+    }, { timeout: 15_000 }).toBe(true);
+
     await page.waitForTimeout(1_000);
     fs.mkdirSync(path.dirname(authStatePath), { recursive: true });
     await page.context().storageState({ path: authStatePath });
@@ -50,5 +63,6 @@ if (!email || !password) {
   }
 })().catch((error) => {
   console.error(error.message);
+  console.error(`Current auth-state setup URL: ${baseURL}`);
   process.exit(1);
 });
