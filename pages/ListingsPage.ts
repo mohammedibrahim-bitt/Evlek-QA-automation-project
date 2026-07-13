@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { firstVisible } from '../utils/locators';
+import { propertyDetailLinks, visiblePropertyDetailHrefs } from '../utils/propertyUrls';
 
 export class ListingsPage extends BasePage {
   constructor(page: Page) {
@@ -16,7 +17,7 @@ export class ListingsPage extends BasePage {
   }
 
   propertyLinks(): Locator {
-    return this.page.locator('a[href*="/properties/"]').filter({ hasText: /\S/ });
+    return propertyDetailLinks(this.page);
   }
 
   async expectListingsVisible(): Promise<void> {
@@ -164,12 +165,7 @@ export class ListingsPage extends BasePage {
   }
 
   async openFirstProperty(): Promise<void> {
-    const hrefs = await this.propertyLinks().evaluateAll((links) =>
-      links
-        .map((link) => link.getAttribute('href'))
-        .filter((href): href is string => Boolean(href))
-        .slice(0, 12)
-    );
+    const hrefs = await visiblePropertyDetailHrefs(this.page, 12);
 
     for (const href of hrefs) {
       await this.page.goto(new URL(href, this.page.url()).toString(), { waitUntil: 'domcontentloaded', timeout: 15_000 });

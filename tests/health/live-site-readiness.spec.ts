@@ -1,4 +1,5 @@
 import { test, expect } from '../fixtures/test';
+import { propertyDetailLinks, visiblePropertyDetailHrefs } from '../../utils/propertyUrls';
 
 const unavailableListingPattern = /ilan bulunamad|not found|404/i;
 
@@ -8,17 +9,19 @@ test.describe('Evlek live-site readiness', () => {
       const response = await page.goto('/satilik', { waitUntil: 'domcontentloaded' });
 
       expect(response?.status(), '/satilik should return a successful HTTP response').toBeLessThan(400);
+      await page.waitForLoadState('networkidle').catch(() => undefined);
       await expect(page.locator('body'), '/satilik should not render a blank page').not.toHaveText(/^\s*$/);
       await expect(page.locator('body'), '/satilik should show listing-related content').toContainText(/ilan|emlak|sat/i);
     });
 
-    const propertyHrefs = await page.locator('a[href*="/properties/"]').evaluateAll((links) =>
-      [...new Set(
-        links
-          .map((link) => link.getAttribute('href'))
-          .filter((href): href is string => Boolean(href))
-      )].slice(0, 12)
-    );
+    const propertyLinkCandidates = propertyDetailLinks(page);
+
+    await expect.poll(
+      () => propertyLinkCandidates.count(),
+      { message: '/satilik should expose listing links after the page settles.' }
+    ).toBeGreaterThan(0);
+
+    const propertyHrefs = await visiblePropertyDetailHrefs(page, 12);
 
     expect(
       propertyHrefs.length,
@@ -46,8 +49,8 @@ test.describe('Evlek live-site readiness', () => {
     });
 
     await test.step('live detail page exposes buyer journey entry points', async () => {
-      const contactAction = page.getByRole('button', { name: /whatsapp|telefon|iletisim|paylas|takip|contact|phone/i })
-        .or(page.getByRole('link', { name: /whatsapp|telefon|iletisim|paylas|takip|contact|phone/i }))
+      const contactAction = page.getByRole('button', { name: /whatsapp|telefon|ileti\S*im|payla\S*|takip|contact|phone/i })
+        .or(page.getByRole('link', { name: /whatsapp|telefon|ileti\S*im|payla\S*|takip|contact|phone/i }))
         .first();
       const mediaAction = page.getByRole('button', { name: /foto|photo|gallery|galeri/i })
         .or(page.getByText(/foto|photo|gallery|galeri/i))

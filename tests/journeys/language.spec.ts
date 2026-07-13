@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 import { test, expect } from '../fixtures/test';
 import { HomePage } from '../../pages/HomePage';
+import { propertyDetailLinks } from '../../utils/propertyUrls';
 
 type LanguageCase = {
   name: string;
@@ -101,9 +102,9 @@ test.describe('Evlek language switch journey', () => {
     await page.goto(new URL(listingHref, page.url()).toString(), { waitUntil: 'domcontentloaded' });
     await home.waitForPageReady();
 
-    await expect(page).toHaveURL(/\/(?:en\/)?properties|\/(?:en\/)?satilik/i);
+    await expect(page).toHaveURL(/\/(?:en\/)?properties|\/(?:en\/)?satilik|\/(?:en\/)?for-sale/i);
     await expect(page.locator('body')).toContainText(/buy|sale|property|listing/i);
-    await expect(page.locator('a[href*="/properties/"], a[href*="/en/properties/"]').filter({ hasText: /\S/ }).first()).toBeVisible();
+    await expect(propertyDetailLinks(page).first()).toBeVisible();
   });
 });
 

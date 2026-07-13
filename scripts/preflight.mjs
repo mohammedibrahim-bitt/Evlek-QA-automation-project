@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import { chromium } from '@playwright/test';
+import { isPropertyDetailHref, propertyDetailLinkSelector } from './propertyUrls.mjs';
 
 dotenv.config();
 
@@ -90,13 +91,13 @@ try {
   await page.goto(absoluteUrl('/satilik'), { waitUntil: 'domcontentloaded', timeout: 60_000 });
   await page.waitForLoadState('networkidle', { timeout: 8_000 }).catch(() => undefined);
 
-  const hrefs = await page.locator('a[href*="/properties/"]').evaluateAll((links) =>
+  const hrefs = (await page.locator(propertyDetailLinkSelector).evaluateAll((links) =>
     [...new Set(
       links
         .map((link) => link.getAttribute('href'))
         .filter((href) => Boolean(href))
-    )].slice(0, 20)
-  );
+    )]
+  )).filter((href) => isPropertyDetailHref(href, baseUrl)).slice(0, 20);
 
   let liveListingUrl = '';
 
