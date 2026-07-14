@@ -5,7 +5,8 @@ import {
   attachCapabilityDiagnostics,
   findFollowAction,
   findSaveSearchAction,
-  openFirstLiveProperty
+  hasFollowCapability,
+  openLivePropertyWithCapability
 } from '../../utils/capabilities';
 
 test.describe('Evlek logged-out gated actions', () => {
@@ -31,8 +32,8 @@ test.describe('Evlek logged-out gated actions', () => {
   test('@regression logged-out user is prompted to authenticate before following a listing', async ({ page }, testInfo) => {
     const detail = new PropertyDetailPage(page);
 
-    const propertyUrl = await openFirstLiveProperty(page, testInfo);
-    test.skip(!propertyUrl, 'No live property detail page is available for follow-gate checks.');
+    const propertyUrl = await openLivePropertyWithCapability(page, testInfo, 'follow-action', hasFollowCapability);
+    test.skip(!propertyUrl, 'No live property with a follow/favorite action is available for follow-gate checks.');
     await detail.expectLoaded();
 
     const followAction = await findFollowAction(page);

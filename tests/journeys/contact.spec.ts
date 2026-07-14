@@ -5,7 +5,8 @@ import {
   findContactAction,
   findDirectContactOption,
   findGalleryEntry,
-  openFirstLiveProperty
+  hasContactCapability,
+  openLivePropertyWithCapability
 } from '../../utils/capabilities';
 
 test.describe('Evlek property contact journey', () => {
@@ -14,8 +15,8 @@ test.describe('Evlek property contact journey', () => {
   test('@regression property detail page exposes contact options without submitting a lead', async ({ page }, testInfo) => {
     const detail = new PropertyDetailPage(page);
 
-    const propertyUrl = await openFirstLiveProperty(page, testInfo);
-    test.skip(!propertyUrl, 'No live property detail page is available for contact checks.');
+    const propertyUrl = await openLivePropertyWithCapability(page, testInfo, 'contact-action', hasContactCapability);
+    test.skip(!propertyUrl, 'No live property with a contact/share action is available for contact checks.');
     await detail.expectLoaded();
 
     const galleryEntry = await findGalleryEntry(page);

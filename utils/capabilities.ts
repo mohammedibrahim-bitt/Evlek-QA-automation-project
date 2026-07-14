@@ -1,5 +1,7 @@
 import type { Locator, Page, TestInfo } from '@playwright/test';
-import { visiblePropertyDetailHrefs } from './propertyUrls';
+import { isLivePropertyDetailPage, visiblePropertyDetailHrefs } from './propertyUrls';
+
+type PropertyCapabilityCheck = (page: Page) => Promise<boolean>;
 
 const unavailableListingPattern = /ilan bulunamad|not found|404/i;
 
@@ -29,6 +31,55 @@ export async function openFirstLiveProperty(page: Page, testInfo: TestInfo, star
   }
 
   await attachCapabilityDiagnostics(testInfo, page, 'No live property detail page could be opened from listing candidates.');
+  return null;
+}
+
+export async function openLivePropertyWithCapability(
+  page: Page,
+  testInfo: TestInfo,
+  capabilityName: string,
+  hasCapability: PropertyCapabilityCheck,
+  startPath = '/satilik',
+  limit = 12
+): Promise<string | null> {
+  await page.goto(startPath, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  await page.waitForLoadState('networkidle', { timeout: 5_000 }).catch(() => undefined);
+
+  const hrefs = await visiblePropertyDetailHrefs(page, limit);
+  const attempted: string[] = [];
+
+  await testInfo.attach(`candidate-property-links-${capabilityName}`, {
+    body: hrefs.length > 0 ? hrefs.join('\n') : 'No candidate property detail links found.',
+    contentType: 'text/plain'
+  });
+
+  for (const href of hrefs) {
+    const detailUrl = new URL(href, page.url()).toString();
+    const response = await page.goto(detailUrl, { waitUntil: 'domcontentloaded', timeout: 20_000 }).catch(() => null);
+    await page.waitForLoadState('networkidle', { timeout: 5_000 }).catch(() => undefined);
+
+    const live = (response?.status() ?? 0) < 400 && await isLivePropertyDetailPage(page);
+    const capabilityAvailable = live && await hasCapability(page).catch(() => false);
+    attempted.push(`${capabilityAvailable ? 'MATCH' : 'skip'} ${response?.status() ?? 'navigation failed'} ${page.url()}`);
+
+    if (capabilityAvailable) {
+      await testInfo.attach(`selected-property-url-${capabilityName}`, {
+        body: page.url(),
+        contentType: 'text/plain'
+      });
+      return page.url();
+    }
+  }
+
+  await testInfo.attach(`property-capability-attempts-${capabilityName}`, {
+    body: attempted.length > 0 ? attempted.join('\n') : 'No property candidates were attempted.',
+    contentType: 'text/plain'
+  });
+  await attachCapabilityDiagnostics(
+    testInfo,
+    page,
+    `No live property with ${capabilityName} was found from ${hrefs.length} candidate(s).`
+  );
   return null;
 }
 
@@ -77,8 +128,8 @@ export async function findCurrencyButton(page: Page, currency: 'GBP' | 'EUR' | '
 
 export async function findContactAction(page: Page): Promise<Locator | null> {
   return firstVisible([
-    page.getByRole('button', { name: /whatsapp|telefon|ileti\S*im|payla\S*|contact|phone/i }),
-    page.getByRole('link', { name: /whatsapp|telefon|ileti\S*im|payla\S*|contact|phone/i })
+    page.getByRole('button', { name: /whatsapp|telefon|ileti\S*im|payla\S*|contact|phone|share/i }),
+    page.getByRole('link', { name: /whatsapp|telefon|ileti\S*im|payla\S*|contact|phone|share/i })
   ]);
 }
 
@@ -100,17 +151,20 @@ export async function findGalleryEntry(page: Page): Promise<Locator | null> {
 
 export async function findGalleryNextButton(page: Page): Promise<Locator | null> {
   return firstVisible([
+    page.locator('.fixed.inset-0 button').filter({ hasText: '›' }),
+    page.locator('[aria-modal="true"] button[aria-label*="Next"], [role="dialog"] button[aria-label*="Next"]'),
     page.locator('button[aria-label*="Sonraki"]:not(.card-photo-nav), button[aria-label*="Next"]:not(.card-photo-nav)'),
-    page.locator('[role="dialog"] button[aria-label*="Sonraki"], [role="dialog"] button[aria-label*="Next"]'),
-    page.locator('[aria-modal="true"] button[aria-label*="Sonraki"], [aria-modal="true"] button[aria-label*="Next"]')
+    page.locator('button[aria-label*="Sonraki"], button[aria-label*="Next photo"], button[aria-label*="Next"]'),
+    page.locator('button[aria-label^="Preview"], button[aria-label="Photo 2"]')
   ]);
 }
 
 export async function findGalleryPreviousButton(page: Page): Promise<Locator | null> {
   return firstVisible([
-    page.locator('button[aria-label*="Önceki"]:not(.card-photo-nav), button[aria-label*="Onceki"]:not(.card-photo-nav), button[aria-label*="Previous"]:not(.card-photo-nav)'),
-    page.locator('[role="dialog"] button[aria-label*="Önceki"], [role="dialog"] button[aria-label*="Previous"]'),
-    page.locator('[aria-modal="true"] button[aria-label*="Önceki"], [aria-modal="true"] button[aria-label*="Previous"]')
+    page.locator('.fixed.inset-0 button').filter({ hasText: '‹' }),
+    page.locator('[aria-modal="true"] button[aria-label*="Previous"], [role="dialog"] button[aria-label*="Previous"]'),
+    page.locator('button[aria-label*="Onceki"]:not(.card-photo-nav), button[aria-label*="Previous"]:not(.card-photo-nav)'),
+    page.locator('button[aria-label*="Onceki"], button[aria-label*="Previous photo"], button[aria-label*="Previous"]')
   ]);
 }
 
@@ -128,11 +182,53 @@ export async function findSaveSearchAction(page: Page): Promise<Locator | null> 
   ]);
 }
 
+export async function hasAllCurrencyControls(page: Page): Promise<boolean> {
+  for (const currency of ['EUR', 'USD', 'TRY', 'GBP'] as const) {
+    if (!await findCurrencyButton(page, currency)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+export async function hasContactCapability(page: Page): Promise<boolean> {
+  return Boolean(await findContactAction(page));
+}
+
+export async function hasFollowCapability(page: Page): Promise<boolean> {
+  return Boolean(await findFollowAction(page));
+}
+
+export async function hasGalleryNavigationCapability(page: Page): Promise<boolean> {
+  const galleryEntry = await findGalleryEntry(page);
+  if (!galleryEntry) {
+    return false;
+  }
+
+  await galleryEntry.click();
+  await page.waitForTimeout(500);
+
+  const hasNavigation = Boolean(
+    await findGalleryNextButton(page)
+      || await page.locator('button[aria-label^="Preview"], button[aria-label^="Photo 1 of"], button[aria-label^="View all"]').count()
+        .then((count) => count > 1)
+        .catch(() => false)
+  );
+  await page.keyboard.press('Escape').catch(() => undefined);
+  await page.waitForTimeout(250);
+  return hasNavigation;
+}
+
 async function firstVisible(locators: Locator[]): Promise<Locator | null> {
   for (const locator of locators) {
-    const candidate = locator.first();
-    if (await candidate.isVisible().catch(() => false)) {
-      return candidate;
+    const count = await locator.count().catch(() => 0);
+
+    for (let index = 0; index < count && index < 20; index += 1) {
+      const candidate = locator.nth(index);
+      if (await candidate.isVisible().catch(() => false)) {
+        return candidate;
+      }
     }
   }
 

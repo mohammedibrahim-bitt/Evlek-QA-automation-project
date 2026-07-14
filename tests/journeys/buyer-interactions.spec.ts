@@ -7,8 +7,9 @@ import {
   findCurrencyButton,
   findGalleryEntry,
   findGalleryNextButton,
-  findGalleryPreviousButton,
-  openFirstLiveProperty
+  hasAllCurrencyControls,
+  hasGalleryNavigationCapability,
+  openLivePropertyWithCapability
 } from '../../utils/capabilities';
 
 test.describe('Evlek buyer interaction journeys', () => {
@@ -40,8 +41,8 @@ test.describe('Evlek buyer interaction journeys', () => {
   test('@regression property detail currency controls update visible currency context', async ({ page }, testInfo) => {
     const detail = new PropertyDetailPage(page);
 
-    const propertyUrl = await openFirstLiveProperty(page, testInfo);
-    test.skip(!propertyUrl, 'No live property detail page is available for currency checks.');
+    const propertyUrl = await openLivePropertyWithCapability(page, testInfo, 'currency-controls', hasAllCurrencyControls);
+    test.skip(!propertyUrl, 'No live property with all currency controls is available for currency checks.');
     await detail.expectLoaded();
 
     for (const currency of ['EUR', 'USD', 'TRY', 'GBP'] as const) {
@@ -65,8 +66,8 @@ test.describe('Evlek buyer interaction journeys', () => {
   test('@regression property detail gallery opens and supports next-photo navigation', async ({ page }, testInfo) => {
     const detail = new PropertyDetailPage(page);
 
-    const propertyUrl = await openFirstLiveProperty(page, testInfo);
-    test.skip(!propertyUrl, 'No live property detail page is available for gallery checks.');
+    const propertyUrl = await openLivePropertyWithCapability(page, testInfo, 'gallery-navigation', hasGalleryNavigationCapability);
+    test.skip(!propertyUrl, 'No live property with gallery next/previous navigation is available for gallery checks.');
     await detail.expectLoaded();
 
     const galleryEntry = await findGalleryEntry(page);
@@ -80,10 +81,9 @@ test.describe('Evlek buyer interaction journeys', () => {
     await detail.expectGalleryStillOpen();
 
     const nextButton = await findGalleryNextButton(page);
-    const previousButton = await findGalleryPreviousButton(page);
-    if (!nextButton || !previousButton) {
-      await attachCapabilityDiagnostics(testInfo, page, 'Gallery opened but next/previous navigation is not available.');
-      test.skip(true, 'Gallery opened but next/previous navigation is not available.');
+    if (!nextButton) {
+      await attachCapabilityDiagnostics(testInfo, page, 'Gallery opened but next-photo navigation is not available.');
+      test.skip(true, 'Gallery opened but next-photo navigation is not available.');
       return;
     }
 
