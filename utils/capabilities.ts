@@ -135,9 +135,61 @@ export async function findContactAction(page: Page): Promise<Locator | null> {
 
 export async function findDirectContactOption(page: Page): Promise<Locator | null> {
   return firstVisible([
+    page.locator('a[href^="tel:"], a[href^="mailto:"], a[href*="wa.me"], a[href*="whatsapp"]'),
     page.getByRole('button', { name: /whatsapp|telefon|contact|phone/i }),
     page.getByRole('link', { name: /whatsapp|telefon|contact|phone/i })
   ]);
+}
+
+export async function contactTargetDetails(locator: Locator): Promise<{ kind: string; target: string }> {
+  const href = await locator.getAttribute('href').catch(() => null);
+  const text = await locator.innerText({ timeout: 3_000 }).catch(() => '');
+  const target = (href || text).replace(/\s+/g, ' ').trim();
+
+  if (/wa\.me|whatsapp/i.test(target)) {
+    return { kind: 'whatsapp', target };
+  }
+
+  if (/^tel:|telefon|phone/i.test(target)) {
+    return { kind: 'phone', target };
+  }
+
+  if (/^mailto:|e-?posta|email|mail/i.test(target)) {
+    return { kind: 'email', target };
+  }
+
+  if (/contact|ileti\S*im/i.test(target)) {
+    return { kind: 'contact', target };
+  }
+
+  return { kind: 'unknown', target };
+}
+
+export async function attachContactOutcomeDiagnostics(
+  testInfo: TestInfo,
+  page: Page,
+  reason: string,
+  details?: { kind: string; target: string }
+): Promise<void> {
+  const title = await page.title().catch(() => '');
+  const visibleContactLinks = await visibleTexts(
+    page.locator('a[href^="tel:"], a[href^="mailto:"], a[href*="wa.me"], a[href*="whatsapp"], button, [role="button"]'),
+    30
+  );
+
+  await testInfo.attach('contact-outcome-diagnostics', {
+    body: [
+      `Reason: ${reason}`,
+      `URL: ${page.url()}`,
+      `Title: ${title}`,
+      details ? `Detected kind: ${details.kind}` : 'Detected kind: (none)',
+      details ? `Detected target: ${details.target || '(empty)'}` : 'Detected target: (none)',
+      '',
+      'Visible contact/action text:',
+      visibleContactLinks.length > 0 ? visibleContactLinks.join('\n') : '(none)'
+    ].join('\n'),
+    contentType: 'text/plain'
+  });
 }
 
 export async function findGalleryEntry(page: Page): Promise<Locator | null> {

@@ -1,7 +1,9 @@
-import { test } from '../fixtures/test';
+import { test, expect } from '../fixtures/test';
 import { PropertyDetailPage } from '../../pages/PropertyDetailPage';
 import {
+  attachContactOutcomeDiagnostics,
   attachCapabilityDiagnostics,
+  contactTargetDetails,
   findContactAction,
   findDirectContactOption,
   findGalleryEntry,
@@ -38,9 +40,23 @@ test.describe('Evlek property contact journey', () => {
 
     const directContactOption = await findDirectContactOption(page);
     if (!directContactOption) {
-      await attachCapabilityDiagnostics(testInfo, page, 'Contact/share action opened no direct contact options.');
-      test.skip(true, 'Contact/share action opened no direct contact options.');
+      const authGateOpened = await detail.expectAuthGateVisible().then(() => true).catch(() => false);
+      if (authGateOpened) {
+        await attachContactOutcomeDiagnostics(testInfo, page, 'Contact action opened an authentication gate.');
+        return;
+      }
+
+      await attachCapabilityDiagnostics(testInfo, page, 'Contact/share action opened no direct contact option or auth gate.');
+      test.skip(true, 'Contact/share action opened no direct contact option or auth gate.');
       return;
     }
+
+    const details = await contactTargetDetails(directContactOption);
+    await attachContactOutcomeDiagnostics(testInfo, page, 'Contact action exposed a direct contact option.', details);
+
+    expect(
+      ['whatsapp', 'phone', 'email', 'contact'],
+      `Contact option should resolve to a known safe contact type. Detected ${details.kind}: ${details.target}`
+    ).toContain(details.kind);
   });
 });

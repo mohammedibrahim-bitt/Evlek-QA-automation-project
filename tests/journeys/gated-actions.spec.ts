@@ -15,7 +15,8 @@ test.describe('Evlek logged-out gated actions', () => {
   test('@regression logged-out user can open save-search notification modal', async ({ page }, testInfo) => {
     const listings = new ListingsPage(page);
 
-    await listings.openSale();
+    const opened = await listings.openAvailableSaleListings(testInfo);
+    test.skip(!opened, 'No live sale listings page with property cards was available for save-search checks.');
     await listings.expectListingsVisible();
 
     const saveSearchAction = await findSaveSearchAction(page);
