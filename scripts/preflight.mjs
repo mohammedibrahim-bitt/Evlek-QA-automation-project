@@ -13,6 +13,7 @@ if (!baseUrl) {
 }
 
 const checks = [];
+const saleListingPaths = ['/satilik', '/en/for-sale', '/en/satilik', '/for-sale', '/en/properties?type=sale'];
 
 function pass(name, detail) {
   checks.push({ status: 'pass', name, detail });
@@ -32,6 +33,40 @@ function absoluteUrl(pathOrUrl) {
 
 async function bodyText(page) {
   return page.locator('body').innerText({ timeout: 5_000 }).catch(() => '');
+}
+
+async function visiblePropertyDetailHrefs(page, limit = 20) {
+  const hrefs = await page.locator(propertyDetailLinkSelector).evaluateAll((links) =>
+    [...new Set(
+      links
+        .map((link) => link.getAttribute('href'))
+        .filter((href) => Boolean(href))
+    )]
+  );
+
+  return hrefs
+    .filter((href) => isPropertyDetailHref(href, page.url()))
+    .slice(0, limit);
+}
+
+async function openFirstListingPageWithPropertyCards(page) {
+  const attempts = [];
+
+  for (const path of saleListingPaths) {
+    const url = absoluteUrl(path);
+    const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 }).catch(() => null);
+    await page.waitForLoadState('networkidle', { timeout: 8_000 }).catch(() => undefined);
+    const status = response?.status() ?? 0;
+    const hrefs = await visiblePropertyDetailHrefs(page, 20).catch(() => []);
+
+    attempts.push(`${path} -> HTTP ${status || 'unknown'} (${hrefs.length} property link candidate(s))`);
+
+    if (status < 400 && hrefs.length > 0) {
+      return { hrefs, selectedPath: path, attempts };
+    }
+  }
+
+  return { hrefs: [], selectedPath: '', attempts };
 }
 
 const browser = await chromium.launch({ headless: true });
@@ -88,16 +123,7 @@ try {
 }
 
 try {
-  await page.goto(absoluteUrl('/satilik'), { waitUntil: 'domcontentloaded', timeout: 60_000 });
-  await page.waitForLoadState('networkidle', { timeout: 8_000 }).catch(() => undefined);
-
-  const hrefs = (await page.locator(propertyDetailLinkSelector).evaluateAll((links) =>
-    [...new Set(
-      links
-        .map((link) => link.getAttribute('href'))
-        .filter((href) => Boolean(href))
-    )]
-  )).filter((href) => isPropertyDetailHref(href, baseUrl)).slice(0, 20);
+  const { hrefs, selectedPath, attempts } = await openFirstListingPageWithPropertyCards(page);
 
   let liveListingUrl = '';
 
@@ -113,9 +139,15 @@ try {
   }
 
   if (liveListingUrl) {
-    pass('At least one live property detail exists', liveListingUrl);
+    pass('At least one live property detail exists', `${liveListingUrl} (from ${selectedPath})`);
   } else {
-    warn('At least one live property detail exists', 'No working property detail was found from /satilik. Buyer/contact/gallery tests may be blocked by site data.');
+    warn(
+      'At least one live property detail exists',
+      [
+        'No working property detail was found from known sale listing routes. Buyer/contact/gallery tests may be blocked by site data.',
+        ...attempts
+      ].join('\n       ')
+    );
   }
 } catch (error) {
   warn('At least one live property detail exists', error instanceof Error ? error.message : String(error));

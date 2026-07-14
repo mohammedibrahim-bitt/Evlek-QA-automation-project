@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 import { test, expect } from '../fixtures/test';
 import { HomePage } from '../../pages/HomePage';
-import { propertyDetailLinks } from '../../utils/propertyUrls';
+import { propertyDetailLinks, visiblePropertyDetailHrefs } from '../../utils/propertyUrls';
 
 type LanguageCase = {
   name: string;
@@ -98,12 +98,14 @@ test.describe('Evlek language switch journey', () => {
     await switchLanguage(page, targetLanguages[0]);
     await home.waitForPageReady();
 
-    const listingHref = await findEnglishListingsHref(page).catch(() => '/en/properties');
+    const listingHref = await findEnglishListingsHref(page).catch(() => '/en/properties?type=sale');
     await page.goto(new URL(listingHref, page.url()).toString(), { waitUntil: 'domcontentloaded' });
     await home.waitForPageReady();
 
     await expect(page).toHaveURL(/\/(?:en\/)?properties|\/(?:en\/)?satilik|\/(?:en\/)?for-sale/i);
     await expect(page.locator('body')).toContainText(/buy|sale|property|listing/i);
+    const hrefs = await visiblePropertyDetailHrefs(page, 8);
+    expect(hrefs.length, 'English listing page should expose at least one property detail link.').toBeGreaterThan(0);
     await expect(propertyDetailLinks(page).first()).toBeVisible();
   });
 });
@@ -205,7 +207,8 @@ async function closeCommonOverlays(page: Page): Promise<void> {
 async function findEnglishListingsHref(page: Page): Promise<string> {
   const candidates = [
     page.getByRole('link', { name: /all listings|listings|properties|see listings/i }).first(),
-    page.locator('a[href="/en/properties"], a[href*="/en/properties"], a[href="/properties"]').first()
+    page.locator('a[href="/en/properties"], a[href*="/en/properties"], a[href="/properties"]').first(),
+    page.locator('a[href*="/en/satilik"], a[href*="/en/for-sale"], a[href*="type=sale"]').first()
   ];
 
   for (const candidate of candidates) {

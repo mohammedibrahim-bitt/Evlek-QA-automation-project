@@ -32,13 +32,23 @@ export function isPropertyDetailHref(href: string, baseUrl: string): boolean {
 }
 
 export async function visiblePropertyDetailHrefs(page: Page, limit = 12): Promise<string[]> {
-  const hrefs = await page.locator(propertyDetailLinkSelector).evaluateAll((links) =>
-    [...new Set(
-      links
-        .map((link) => link.getAttribute('href'))
-        .filter((href): href is string => Boolean(href))
-    )]
-  );
+  let hrefs: string[] = [];
+
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    hrefs = await page.locator(propertyDetailLinkSelector).evaluateAll((links) =>
+      [...new Set(
+        links
+          .map((link) => link.getAttribute('href'))
+          .filter((href): href is string => Boolean(href))
+      )]
+    );
+
+    if (hrefs.some((href) => isPropertyDetailHref(href, page.url()))) {
+      break;
+    }
+
+    await page.waitForTimeout(500);
+  }
 
   return hrefs
     .filter((href) => isPropertyDetailHref(href, page.url()))

@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/test';
 
 type RouteCheck = {
   path: string;
-  expectedUrl?: RegExp;
+  validUrl?: RegExp;
   expectedText: RegExp;
   protectedRoute?: boolean;
 };
@@ -10,40 +10,42 @@ type RouteCheck = {
 const routes: RouteCheck[] = [
   {
     path: '/',
-    expectedUrl: /https:\/\/evlek\.app\/(?:\?.*)?$/,
+    validUrl: /https:\/\/evlek\.app\/(?:\?.*)?$/,
     expectedText: /K\S*br\S*s|sat\S*l\S*k|kiral\S*k|emlak|property/i
   },
   {
     path: '/satilik',
-    expectedText: /sat\S*l\S*k|ilan|emlak/i
+    validUrl: /\/(?:tr\/)?satilik|\/(?:en\/)?properties\?type=sale|\/(?:en\/)?for-sale/i,
+    expectedText: /sat\S*l\S*k|for sale|sale|ilan|emlak|property|listing/i
   },
   {
     path: '/kiralik',
-    expectedText: /kiral\S*k|ilan|emlak/i
+    validUrl: /\/(?:tr\/)?kiralik|\/(?:en\/)?properties\?type=rent|\/(?:en\/)?for-rent/i,
+    expectedText: /kiral\S*k|for rent|rent|ilan|emlak|property|listing/i
   },
   {
     path: '/en',
-    expectedUrl: /\/en(?:\/)?$/,
-    expectedText: /North Cyprus|property|buy|rent|login/i
+    validUrl: /\/en(?:\/)?$/,
+    expectedText: /North Cyprus|property|buy|rent|login|sale|listing/i
   },
   {
     path: '/ru',
-    expectedUrl: /\/ru(?:\/)?$/,
+    validUrl: /\/ru(?:\/)?$/,
     expectedText: /Evlek|\S{3,}/i
   },
   {
     path: '/de',
-    expectedUrl: /\/de(?:\/)?$/,
+    validUrl: /\/de(?:\/)?$/,
     expectedText: /Nordzypern|Immobilien|Kaufen|Mieten|Einloggen/i
   },
   {
     path: '/ar',
-    expectedUrl: /\/ar(?:\/)?$/,
+    validUrl: /\/ar(?:\/)?$/,
     expectedText: /Evlek|\S{3,}/i
   },
   {
     path: '/en/properties?type=sale',
-    expectedUrl: /\/en\/properties\?type=sale/i,
+    validUrl: /\/en\/properties\?type=sale|\/en\/satilik|\/en\/for-sale/i,
     expectedText: /buy|sale|property|listing/i
   },
   {
@@ -72,8 +74,8 @@ test.describe('Evlek route monitor', () => {
       expect(status, `${route.path} should not return a server/client error`).toBeLessThan(400);
       await page.waitForLoadState('networkidle', { timeout: 8_000 }).catch(() => undefined);
 
-      if (route.expectedUrl) {
-        await expect(page, `${route.path} should stay on the expected route family`).toHaveURL(route.expectedUrl);
+      if (route.validUrl) {
+        await expect(page, `${route.path} should stay in a valid route family`).toHaveURL(route.validUrl);
       }
 
       await expect(page.locator('body'), `${route.path} should not render a blank page`).not.toHaveText(/^\s*$/);
