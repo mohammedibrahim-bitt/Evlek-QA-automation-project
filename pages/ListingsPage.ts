@@ -155,6 +155,33 @@ export class ListingsPage extends BasePage {
     await expect(this.page.getByRole('dialog', { name: /filtre|filters/i })).toBeVisible();
   }
 
+  async openFiltersIfAvailable(): Promise<boolean> {
+    const filterButton = await firstVisible([
+      this.page.getByRole('button', { name: /^(filtre|filtreler|filters)$/i }),
+      this.page.getByRole('button', { name: /filtre|filters/i }),
+      this.page.locator('button').filter({ hasText: /filtre|filters/i })
+    ]).catch(() => null);
+
+    if (!filterButton) {
+      return false;
+    }
+
+    await filterButton.click();
+
+    const dialog = await firstVisible([
+      this.page.getByRole('dialog', { name: /filtre|filters/i }),
+      this.page.getByRole('dialog').filter({ hasText: /filtre|filters|oda|room|fiyat|price/i }),
+      this.page.locator('[role="dialog"], [data-state="open"]').filter({ hasText: /filtre|filters|oda|room|fiyat|price/i })
+    ]).catch(() => null);
+
+    if (!dialog) {
+      return false;
+    }
+
+    await expect(dialog).toBeVisible();
+    return true;
+  }
+
   async applyRoomFilter(room = '2+1'): Promise<void> {
     const roomButton = this.page.getByRole('dialog', { name: /filtre|filters/i })
       .getByRole('button', { name: room, exact: true })

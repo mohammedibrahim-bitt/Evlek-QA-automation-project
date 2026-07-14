@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page } from '@playwright/test';
+import { expect, type Locator, type Page, type TestInfo } from '@playwright/test';
 import { BasePage } from './BasePage';
 import {
   findEmailInput,
@@ -26,6 +26,10 @@ export class AuthPage extends BasePage {
   async openLoginModal(): Promise<void> {
     const opened = await openLoginSurface(this.page);
     expect(opened, 'Login modal should open from the configured login entry.').toBe(true);
+  }
+
+  async openLoginModalIfAvailable(testInfo?: TestInfo): Promise<boolean> {
+    return openLoginSurface(this.page, testInfo);
   }
 
   async login(email: string, password: string): Promise<void> {
