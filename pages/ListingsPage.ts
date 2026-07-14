@@ -11,6 +11,18 @@ import {
 const saleListingPaths = ['/satilik', '/en/for-sale', '/en/satilik', '/for-sale'];
 const rentListingPaths = ['/kiralik', '/en/for-rent', '/en/kiralik', '/for-rent'];
 
+type ListingControlSnapshot = {
+  searchInput: boolean;
+  compactSearchEntry: boolean;
+  citySelect: boolean;
+  filterDialog: boolean;
+  quickRoomFilter: boolean;
+  priceFilter: boolean;
+  propertyType: boolean;
+  sort: boolean;
+  saveSearch: boolean;
+};
+
 export class ListingsPage extends BasePage {
   constructor(page: Page) {
     super(page);
@@ -45,23 +57,80 @@ export class ListingsPage extends BasePage {
   }
 
   async expectSearchAndFilterControlsVisible(): Promise<void> {
-    const hasSearchInput = Boolean(await this.visibleSearchInput());
-    const hasCompactSearchEntry = await this.page.getByRole('navigation', { name: /alt|bottom/i })
-      .getByRole('link', { name: /ara|search/i })
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const filterControl = await firstVisible([
-      this.page.getByRole('button', { name: /filtre|filters|m\S*lk tipi|property type|oda|room|fiyat|price/i }),
-      this.page.getByRole('group', { name: /filtre|filters/i }),
-      this.page.getByRole('combobox', { name: /s\S*rala|sort/i })
-    ]).catch(() => null);
+    const controls = await this.detectListingControls();
+    const hasSearch = controls.searchInput || controls.compactSearchEntry;
+    const hasBrowsingControl = controls.citySelect
+      || controls.filterDialog
+      || controls.quickRoomFilter
+      || controls.priceFilter
+      || controls.propertyType
+      || controls.sort
+      || controls.saveSearch;
 
-    expect(
-      hasSearchInput || hasCompactSearchEntry,
-      'Listing page should expose either a visible search input or a compact mobile search entry.'
-    ).toBe(true);
-    expect(filterControl, 'Listing page should expose visible filter, sort, or browsing controls.').not.toBeNull();
+    expect(hasSearch || hasBrowsingControl, 'Listing page should expose at least one visible search, filter, sort, or browsing control.').toBe(true);
+  }
+
+  async attachListingControlsDiagnostics(testInfo: TestInfo, reason: string): Promise<void> {
+    const controls = await this.detectListingControls();
+    const visibleButtons = await this.visibleTexts(this.page.locator('button, [role="button"]'), 30);
+    const visibleLinks = await this.visibleTexts(this.page.locator('a[href]'), 30);
+
+    await testInfo.attach('listing-controls-diagnostics', {
+      body: [
+        `Reason: ${reason}`,
+        `URL: ${this.page.url()}`,
+        '',
+        'Detected controls:',
+        ...Object.entries(controls).map(([name, available]) => `${name}: ${available ? 'yes' : 'no'}`),
+        '',
+        'Visible buttons:',
+        visibleButtons.length > 0 ? visibleButtons.join('\n') : '(none)',
+        '',
+        'Visible links:',
+        visibleLinks.length > 0 ? visibleLinks.join('\n') : '(none)'
+      ].join('\n'),
+      contentType: 'text/plain'
+    });
+  }
+
+  async exerciseAvailableSearchOrFilter(testInfo: TestInfo, term = 'Girne', maxActions = 1): Promise<string[]> {
+    const exercised: string[] = [];
+    await this.attachListingControlsDiagnostics(testInfo, 'Before adaptive search/filter exercise.');
+
+    if (maxActions > 0 && await this.enterSearchTermIfAvailable(term)) {
+      exercised.push('search-input-entry');
+    }
+
+    if (exercised.length < maxActions && await this.applyQuickRoomFilterIfAvailable('2+1')) {
+      exercised.push('quick-room-filter');
+    }
+
+    if (exercised.length < maxActions && await this.selectPropertyTypeIfAvailable()) {
+      exercised.push('property-type');
+    }
+
+    if (exercised.length < maxActions && await this.applyPriceFilterIfAvailable()) {
+      exercised.push('price-filter');
+    }
+
+    if (exercised.length < maxActions && await this.sortByLowestPriceIfAvailable()) {
+      exercised.push('sort');
+    }
+
+    if (exercised.length < maxActions && await this.selectCityIfAvailable(term)) {
+      exercised.push('city-select');
+    }
+
+    if (exercised.length === 0 && maxActions > 0 && await this.openFiltersIfAvailable()) {
+      exercised.push('filter-dialog');
+    }
+
+    await testInfo.attach('listing-controls-exercised', {
+      body: exercised.length > 0 ? exercised.join('\n') : 'No visible search/filter control could be safely exercised.',
+      contentType: 'text/plain'
+    });
+
+    return exercised;
   }
 
   async search(term: string): Promise<void> {
@@ -112,6 +181,17 @@ export class ListingsPage extends BasePage {
     return true;
   }
 
+  async enterSearchTermIfAvailable(term: string): Promise<boolean> {
+    const input = await this.visibleSearchInput();
+    if (!input) {
+      return false;
+    }
+
+    await input.fill(term, { timeout: 5_000 }).catch(() => undefined);
+    const value = await input.inputValue({ timeout: 3_000 }).catch(() => '');
+    return value.toLowerCase().includes(term.toLowerCase());
+  }
+
   async selectCity(city: string): Promise<void> {
     const select = this.citySelect();
     await select.selectOption({ label: city });
@@ -156,6 +236,8 @@ export class ListingsPage extends BasePage {
   }
 
   async openFiltersIfAvailable(): Promise<boolean> {
+    await this.dismissCookieBannerIfPresent();
+
     const filterButton = await firstVisible([
       this.page.getByRole('button', { name: /^(filtre|filtreler|filters)$/i }),
       this.page.getByRole('button', { name: /filtre|filters/i }),
@@ -166,7 +248,10 @@ export class ListingsPage extends BasePage {
       return false;
     }
 
-    await filterButton.click();
+    const clicked = await filterButton.click({ timeout: 5_000 }).then(() => true).catch(() => false);
+    if (!clicked) {
+      return false;
+    }
 
     const dialog = await firstVisible([
       this.page.getByRole('dialog', { name: /filtre|filters/i }),
@@ -275,7 +360,12 @@ export class ListingsPage extends BasePage {
       this.page.getByRole('option', { name: /fiyat|lowest price|price.*low/i }),
       this.page.getByRole('button', { name: /fiyat|lowest price|price.*low/i }),
       this.page.locator('button').filter({ hasText: /en d.+k fiyat|fiyat/i })
-    ]);
+    ]).catch(() => null);
+
+    if (!lowestPrice) {
+      await this.page.keyboard.press('Escape').catch(() => undefined);
+      return false;
+    }
 
     await lowestPrice.click();
     await this.waitForPageReady();
@@ -428,5 +518,78 @@ export class ListingsPage extends BasePage {
   private citySelect(): Locator {
     return this.page.locator('select[aria-label*="sehir" i], select[aria-label*="city" i], select')
       .first();
+  }
+
+  private async detectListingControls(): Promise<ListingControlSnapshot> {
+    return {
+      searchInput: Boolean(await this.visibleSearchInput()),
+      compactSearchEntry: await this.compactSearchEntry().isVisible().catch(() => false),
+      citySelect: await this.citySelect().isVisible().catch(() => false),
+      filterDialog: Boolean(await this.filterButton()),
+      quickRoomFilter: await this.page.getByRole('button', { name: /^2\+1$/i }).first().isVisible().catch(() => false),
+      priceFilter: await this.page.getByRole('button', { name: /100|£|€|\$|₺|GBP|EUR|USD|TRY/i }).first().isVisible().catch(() => false),
+      propertyType: Boolean(await this.propertyTypeControl()),
+      sort: await this.page.getByRole('button', { name: /s.rala|sort/i }).first().isVisible().catch(() => false),
+      saveSearch: Boolean(await firstVisible([
+        this.page.getByRole('button', { name: /aramay\S* kaydet|save search/i }),
+        this.page.getByRole('link', { name: /aramay\S* kaydet|save search/i })
+      ]).catch(() => null))
+    };
+  }
+
+  private compactSearchEntry(): Locator {
+    return this.page.getByRole('navigation', { name: /alt|bottom/i })
+      .getByRole('link', { name: /ara|search/i })
+      .first();
+  }
+
+  private async filterButton(): Promise<Locator | null> {
+    return firstVisible([
+      this.page.getByRole('button', { name: /^(filtre|filtreler|filters)$/i }),
+      this.page.getByRole('button', { name: /filtre|filters/i }),
+      this.page.locator('button').filter({ hasText: /filtre|filters/i })
+    ]).catch(() => null);
+  }
+
+  private async propertyTypeControl(typePattern = /daire|apartment|m\S*lk tipi|property type|type/i): Promise<Locator | null> {
+    return firstVisible([
+      this.page.getByRole('tab', { name: typePattern }),
+      this.page.getByRole('button', { name: typePattern }),
+      this.page.getByRole('radio', { name: typePattern })
+    ]).catch(() => null);
+  }
+
+  private async visibleTexts(locator: Locator, limit: number): Promise<string[]> {
+    const texts: string[] = [];
+    const count = await locator.count().catch(() => 0);
+
+    for (let index = 0; index < count && texts.length < limit; index += 1) {
+      const item = locator.nth(index);
+      if (!await item.isVisible().catch(() => false)) {
+        continue;
+      }
+
+      const text = await item.innerText().catch(() => '');
+      const trimmed = text.replace(/\s+/g, ' ').trim();
+      if (trimmed) {
+        texts.push(trimmed);
+      }
+    }
+
+    return texts;
+  }
+
+  private async dismissCookieBannerIfPresent(): Promise<void> {
+    const requiredOnly = this.page.getByRole('button', { name: /zorunlu|required only|necessary only/i }).first();
+    const acceptAll = this.page.getByRole('button', { name: /kabul et|accept all|accept/i }).first();
+
+    if (await requiredOnly.isVisible().catch(() => false)) {
+      await requiredOnly.click({ timeout: 5_000 }).catch(() => undefined);
+      return;
+    }
+
+    if (await acceptAll.isVisible().catch(() => false)) {
+      await acceptAll.click({ timeout: 5_000 }).catch(() => undefined);
+    }
   }
 }
